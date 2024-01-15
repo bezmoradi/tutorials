@@ -513,3 +513,9 @@ exit status 2
 ```
 
 -   In the above example, if we work with array, VSCode warns us but for slices we won't get any warning inside the editor but when we run the program, in either case we would get compile-time error
+
+## An Intro to `slices` Built-in Package
+- Package [slices](https://pkg.go.dev/slices) defines various functions useful with slices of any type.
+
+
+
