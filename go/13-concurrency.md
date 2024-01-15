@@ -274,7 +274,8 @@ func main() {
 -   It fixed the first issue; now we have another one though! Nothing is outputted in the terminal. The reason you don't see any output is that the `main` function finishes execution before the goroutines `sender` and `receiver` get a chance to execute due to the concurrent nature of goroutines. In Go, the `main` function **doesn't wait** for goroutines to finish by default. To fix that, we can either use `WaitGroup` of remove the `go` keyword behind the `receiver`. As the `receiver` function runs in the `main` goroutine, waits until a value is available on the channel. If a value is already there, it proceeds; otherwise, it blocks until a value is sent on the channel.
 
 ## How to Use Channels with Range
-- We can loop through a channel's value using a loop:
+
+-   We can loop through a channel's value using a loop:
 
 ```go
 package main
@@ -300,7 +301,7 @@ func main() {
 }
 ```
 
-- Technically, the `for` loop should iterate over all channel values until it's closed. Let's see what we get in the output:
+-   Technically, the `for` loop should iterate over all channel values until it's closed. Let's see what we get in the output:
 
 ```text
 0
@@ -319,9 +320,9 @@ goroutine 1 [chan receive]:
 main.main()
 	/Users/behzadmoradi/Documents/projects/playgrounds/go/main.go:16 +0xc0
 exit status 2
-```  
+```
 
-- In the above code, the `range` starts looping over the channel until the it's closed and the main problem here is that we have not explicitly asked our channel to get closed that'w why `range` is asking for more values whereas there is no more values and we get an error. To fix that, we need to close our channel when we are done:
+-   In the above code, the `range` starts looping over the channel until the it's closed and the main problem here is that we have not explicitly asked our channel to get closed that'w why `range` is asking for more values whereas there is no more values and we get an error. To fix that, we need to close our channel when we are done:
 
 ```go
 go func() {
@@ -333,7 +334,7 @@ go func() {
 }()
 ```
 
-- Now it outputs:
+-   Now it outputs:
 
 ```text
 0
@@ -350,9 +351,10 @@ program existed successfully
 ```
 
 ## How to Use Channels with `select` Statement
-- The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While switch works with multiple expressions to determine the flow of control, select deals with communication operations on channels. In short:
-	- A select statement allows you to wait on multiple channel operations simultaneously. 
-	- If none of the channels are ready, the select statement blocks until at least one of the channels is ready to proceed.
+
+-   The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While switch works with multiple expressions to determine the flow of control, select deals with communication operations on channels. In short:
+    -   A select statement allows you to wait on multiple channel operations simultaneously.
+    -   If none of the channels are ready, the select statement blocks until at least one of the channels is ready to proceed.
 
 ```go
 package main
@@ -400,9 +402,9 @@ func main() {
 	show(even, odd, quit)
 }
 ```
-- In the above program, The `select` statement listens to three channels: `even`, `odd`, and `quit`. When any of these channels are ready to be read from, the corresponding case inside the select will execute. If a value is received from the `even` channel, it prints it as an even number. If a value is received from the `odd` channel, it prints it as an odd number. And ff a value is received from the `quit` channel, it prints "Done" and exits the show function.
-- The `select` statement doesn't operate on values like a switch statement does. Instead, it chooses which channel operation to proceed with based on the readiness of the channels involved. It's a powerful construct for handling concurrent communication between goroutines.
 
+-   In the above program, The `select` statement listens to three channels: `even`, `odd`, and `quit`. When any of these channels are ready to be read from, the corresponding case inside the select will execute. If a value is received from the `even` channel, it prints it as an even number. If a value is received from the `odd` channel, it prints it as an odd number. And ff a value is received from the `quit` channel, it prints "Done" and exits the show function.
+-   The `select` statement doesn't operate on values like a switch statement does. Instead, it chooses which channel operation to proceed with based on the readiness of the channels involved. It's a powerful construct for handling concurrent communication between goroutines.
 
 ## Another Example of Channels in Go
 
@@ -632,3 +634,158 @@ func slowGreet(phrase string, doneChannel chan bool) {
 for range done {
 }
 ```
+
+## Race Condition & Mutex
+
+-   A mutex, short for "mutual exclusion," is a synchronization mechanism used in concurrent programming to ensure that only one thread or goroutine can access a shared resource or critical section at a time. The purpose of a mutex is to prevent data races and maintain the consistency of shared data. Here's a basic explanation of how a mutex works:
+
+    -   **Locking**: When a goroutine wants to access a critical section or modify a shared resource, it must acquire the mutex by calling the Lock method. If the mutex is currently held by another goroutine, the requesting goroutine will be blocked until the mutex is released by the current holder.
+    -   **Critical Section**: Once a goroutine has acquired the mutex, it can safely access the shared resource or execute a critical section of code. The mutex ensures that only one goroutine is in this critical section at any given time.
+    -   **Unlocking**: After completing the critical section, the goroutine releases the mutex by calling the Unlock method. This allows other goroutines waiting for the mutex to acquire it and proceed.
+
+-   In the context of Go, a race condition occurs when two or more goroutines (concurrent threads of execution in Go) access shared data concurrently, and at least one of them modifies the data. The behavior of the program becomes unpredictable because the outcome depends on the timing and order of execution of the goroutines.
+-   Race conditions can lead to unexpected and erroneous behavior in a program. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program. Here's a simple example of a race condition in Go:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var counter = 0
+var wg sync.WaitGroup
+
+func increment() {
+	for i := 0; i < 1000; i++ {
+		counter++
+	}
+
+	wg.Done()
+}
+
+func main() {
+	wg.Add(2)
+
+	go increment()
+	go increment()
+
+	wg.Wait()
+
+	fmt.Println("Final Counter:", counter)
+}
+```
+
+-   In the first run we will get `Final Counter: 1395` and in the second one something unpredictable like `Final Counter: 1395`. In this example, two goroutines are concurrently incrementing a shared counter variable. Since there is no synchronization mechanism (like locks or channels), a race condition occurs, and the final value of the counter is unpredictable.
+-   To address this issue and avoid race conditions, you should use synchronization mechanisms like a mutex. Here's an example using a mutex:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var counter = 0
+var wg sync.WaitGroup
+var mutex sync.Mutex
+
+func increment() {
+	for i := 0; i < 1000; i++ {
+		mutex.Lock()
+		counter++
+		mutex.Unlock()
+	}
+
+	wg.Done()
+}
+
+func main() {
+	wg.Add(2)
+
+	go increment()
+	go increment()
+
+	wg.Wait()
+
+	fmt.Println("Final Counter:", counter)
+}
+```
+
+-   In this modified version, `mutex` is used to ensure that only one goroutine can modify the `counter` variable at a time. The `Lock` and `Unlock` functions of the `mutex` guarantee the atomicity of the critical section, preventing race conditions and ensuring that the final value of counter is as expected. Now we will get `Final Counter: 2000` in the output without any race condition.
+-   As an experiment, let's place the `mutex` variable inside the `increment` function:
+
+```go
+func increment() {
+	var mutex sync.Mutex
+
+	for i := 0; i < 1000; i++ {
+		mutex.Lock()
+		counter++
+		mutex.Unlock()
+	}
+	wg.Done()
+}
+```
+
+-   If we run the program, the race condition scenario is back into play! The reason being is that by calling the `increment` function two times, we are creating two variables called `mutex` for each that's why the locking and unlocking functionalities have no effect on each other; in other words, the `mutex` locks the `counter` variable then unlocks it in each iteration of the loop when we call the `increment` function for the first time and when in the second function call, we would have a totally different instance of `sync.Mutex` and for this reason mutating the `counter` variable becomes out of control.
+
+## What Is Atomicity?
+
+-   In the context of concurrent programming, atomicity refers to the property of an operation or a series of operations being executed as a single, indivisible unit. An atomic operation is one that appears to occur instantaneously from the perspective of other threads or processes, and it is not subject to interference by other concurrent operations.
+-   In the context of shared variables, atomicity is crucial to prevent race conditions. A race condition occurs when multiple threads or goroutines access shared data concurrently, and at least one of them modifies the data. If the operations on the shared data are not atomic, the interleaving of operations from different threads can lead to unexpected and incorrect results.
+-   By making the increment operation atomic, you ensure that it is executed as a single, uninterruptible unit. In Go, you can use synchronization mechanisms such as `mutex` or the `sync/atomic` package to achieve atomic operations.
+-   The `sync/atomic` package provides atomic operations for basic types like integers, ensuring that operations like increments, decrements, swaps, etc., are atomic and free from race conditions.
+-   We rewrite the above program using the `sync.atomic` package as follows:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+var counter int32
+var wg sync.WaitGroup
+
+func increment() {
+
+	for i := 0; i < 1000; i++ {
+		atomic.AddInt32(&counter, 1)
+	}
+
+	wg.Done()
+}
+
+func main() {
+	wg.Add(2)
+
+	go increment()
+	go increment()
+
+	wg.Wait()
+
+	fmt.Println("Final Counter:", counter)
+}
+```
+
+-   Still the won't be any race condition and no matter how many times we run it, we'll get the same result.
+
+## What Are The Differences between `sync.Mutex` And `sync.Atomic`?
+
+-   Both `sync.Mutex` and `sync.atomic` package can be used to achieve synchronization and prevent race conditions in concurrent programming. However, there are differences between them, and the choice between them depends on the specific requirements of your program. Here are some key differences:
+-   Mutex:
+    -   Provides a way to protect a block of code (critical section) with a lock and unlock mechanism. It is suitable for protecting larger sections of code where multiple operations need to be performed atomically.
+    -   Involves more overhead because it requires acquiring and releasing locks, and it may involve context switching between goroutines.
+-   `sync/atomic`:
+    -   Provides atomic operations on basic types (e.g., integers). It is more suitable for fine-grained operations, such as increments, swaps, and compare-and-swap operations on individual variables.
+    -   Generally has lower overhead because it directly operates on memory without acquiring locks.
+- In summary, if you need to protect larger sections of code or perform more complex synchronization, a mutex is often a suitable choice. If you have specific atomic operations on individual variables and need lower-level, more lightweight synchronization, the sync/atomic package might be more appropriate. 
+
+
+
+

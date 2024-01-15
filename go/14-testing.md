@@ -131,10 +131,10 @@ func BenchmarkAdd(b *testing.B) {
 ```
 
 -   As shown above, the test name starts with `Benchmark` and the type of the input param is `*testing.B` which stands for "Benchmark".
--   Benchmarks are not run by default; so in order to run them we have to use the `go test -bench=.` flag:
+-   Benchmarks are not run by default; so in order to run them we have to use the `go test -bench=.` or `go test -bench .` commands:
 
 ```text
-$ go test -bench=.
+$ go test -bench .
 goos: darwin
 goarch: arm64
 pkg: playground/src/api/services
@@ -144,3 +144,29 @@ ok  	playground/src/api/services	0.756s
 ```
 
 -   As shown above, our function is called `1000000000` times and on average it takes `0.5125` nano seconds per operation
+
+## Test Coverage
+
+-   To see what percentage of our codebase is covered using tests, we can use the `-cover` flag as follows:
+
+```text
+& go test -cover
+PASS
+coverage: 50.0% of statements
+ok  	playground	0.169s
+```
+
+-   As shown above, `50%` of our main code is covered using tests which is not ideal!
+-   Also we can output the result into a file then open that file inside the browser:
+
+```text
+& go test -coverprofile output.txt
+```
+
+-   The above command created a file called `output.txt` including the coverage results. In order to convert that file into an HTML document and show it inside the browser, we need to run the following command:
+
+```text
+& go tool cover -html=output.txt
+```
+
+-   As soon as you hit enter, a new browser tab will be popped up showing the coverage results
