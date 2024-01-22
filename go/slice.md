@@ -89,7 +89,8 @@ fmt.Println(names[3]) // Prints 4
 numbers := [4]int{1, 2, 3, 4}
 fmt.Println(numbers[4]) // invalid argument: index 4 out of bounds [0:4]
 ```
-- To know more on this topic, refer to [Index out of Range Error](#index-out-of-range-error)
+
+-   To know more on this topic, refer to [Index out of Range Error](#index-out-of-range-error)
 
 -   To update a specific index of the array with a new value we can:
 
@@ -387,7 +388,8 @@ products := []product{
 	{id: 2, title: "Second"}, // Command must exist
 }
 ```
-- Again, an important thing to remember is the trailing command after the second element.
+
+-   Again, an important thing to remember is the trailing command after the second element.
 -   We can also first initialized the variable then add elements to it:
 
 ```go
@@ -439,6 +441,7 @@ func main() {
 slice := make([]int, 0, 10)
 fmt.Println(slice) // []
 ```
+
 -   Basically, the main difference lies in the fact the we when added 5 as the second argument to the `make()` function, we asked that function to initialize the slice and as the default value for `int` type is `0`, we have `[0 0 0 0 0]`. In the second case, when we passed `0` as the second argument, it means that we do not want to initialize the slice that's why we get `[]`
 -   Likewise, the slice literal `[]int{}` initializes an empty slice. This method is suitable when the size or capacity of the slice isn't predefined, and you plan to append elements dynamically based on your program's logic.
 -   Technically, you can use `make()` when you know the initial size and optionally the capacity of the slice, especially in scenarios where you want to allocate contiguous memory for the slice elements upfront or when dealing with larger slices to avoid **frequent reallocations** (Because every time we add a new element, behind the scenes a new array is created).
@@ -515,7 +518,9 @@ exit status 2
 -   In the above example, if we work with array, VSCode warns us but for slices we won't get any warning inside the editor but when we run the program, in either case we would get compile-time error
 
 ## An Intro to `slices` Built-in Package
-- Package [slices](https://pkg.go.dev/slices) defines various functions useful with slices of any type.
 
+-   Package [slices](https://pkg.go.dev/slices) defines various functions useful with slices of any type.
 
+## Links
 
+-   [Go Slices: usage and internals](https://go.dev/blog/slices-intro) is an article on Go official blog which digs deep into how arrays and slices work behind the scenes.
