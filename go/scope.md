@@ -264,4 +264,11 @@ func main() {
 
 Within the package, we have defined a variable called `Name` and we also have a variable with the same name inside the `utils` package and they don't have any conflict at all.
 
+
+## Exporting Variables from The `main` Package
+
+In Go, the `main` package has a specific role; it's meant for executable programs. Other packages should not generally depend on the `main` package due to how the Go language is structured. Variables in the `main` package are accessible only within the `main` package itself and cannot be imported by other packages.
+
+
+
 To read more about functions in Go, visit [Functions](https://github.com/bezmoradi/tutorials/blob/master/go/function.md)
