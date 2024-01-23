@@ -110,6 +110,30 @@ func main() {
 }
 ```
 
+
+### Custom Types
+We can also create our own custom types off of built-in types:
+
+```go
+package main
+
+import "fmt"
+
+type customString string
+
+func main() {
+	var name customString = "Go"
+	name.logString() // Go
+}
+
+func (s customString) logString() {
+	fmt.Println(s)
+}
+```
+
+In the above program, we have created a custom type called `customString` which extends the `string` type.
+
+
 ## Type Conversion
 
 The process of turning one type into another is called Type Conversion:

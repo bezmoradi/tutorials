@@ -1,6 +1,6 @@
 # Go > Functions
 
--   Let's first define a function then analyze it:
+Most probably the simplest form of function in Go is the one which doesn't accept any input param and also doesn't return anything:
 
 ```go
 package main
@@ -8,7 +8,19 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println(doSomething())
+	doSomething() // Something
+}
+
+func doSomething() {
+	fmt.Println("Something")
+}
+```
+
+In order for the above function to return something we have:
+
+```go
+func main() {
+	fmt.Println(doSomething()) // Something
 }
 
 func doSomething() string {
@@ -16,121 +28,85 @@ func doSomething() string {
 }
 ```
 
--   To define a custom function, we must always add the return type as well which in this case is `string`
-
-## Parameters
-
--   In order to receive function params we can:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println(concatStrings("Bez", "Moradi"))
-}
-
-func concatStrings(l string, r string) string {
-	return l + " " + r
-}
-```
-
--   If input params are of the same type, we can write our function like so as well:
-
-```go
-func concatStrings(l, r string) string {
-	return l + " " + r
-}
-```
-
-## Return Multiple Values
-
--   In Go, any function can return multiple values as follows:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	myName, myAge := returnMultipleValues("Behzad", 40)
-	fmt.Println(myName, myAge)
-}
-
-func returnMultipleValues(name string, age int) (string, int) {
-	return name, age
-}
-```
-
-## Named Returned Values
-
--   Another syntax for returning multiple values is as follows:
+In order to receive function params we can:
 
 ```go
 func main() {
-	salary, age := returnMultipleValues(100000, 39)
-	fmt.Println(salary, age)
+	fmt.Println(doSomething("Something")) // Something
 }
 
-func returnMultipleValues(salary, age int) (returnedSalary float64, returnedAge int) {
-	returnedSalary = float64(salary) + 0.1
-	returnedAge = age + 1
+func doSomething(input string) string {
+	return input
+}
+```
 
+If input params are of the same type, we can write our function like so as well:
+
+```go
+func main() {
+	fmt.Println(doSomething("Something", "Something else")) // Something Something else
+}
+
+func doSomething(input1, input2 string) string {
+	return input1 + " " + input2
+}
+```
+
+In Go, any function can return multiple values as follows:
+
+```go
+func main() {
+	fmt.Println(doSomething("Something", "Something else")) // Something Something else
+}
+
+func doSomething(input1, input2 string) (string, string) {
+	return input1, input2
+}
+```
+
+Another syntax for returning multiple values is as follows:
+
+```go
+func main() {
+	fmt.Println(doSomething("Something", "Something else")) // Something Something else
+}
+
+func doSomething(input1, input2 string) (returned1 string, returned2 string) {
+	returned1 = input1
+	returned2 = input2
 	return
 }
 ```
 
--   As shown in `(returnedSalary float64, returnedAge int)`, we give a name to return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. If we want to be more explicit, we can so `return returnedSalary, returnedAge` as well.
+As shown above, we've given names to the return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. Meanwhile, ff your want to be more explicit, you can return the values this way as well:
 
-## Scope
+```go
+func doSomething(input1, input2 string) (returned1 string, returned2 string) {
+	returned1 = input1
+	returned2 = input2
+	return returned1, returned2
+}
+```
 
--   Any variable or constant which is defined inside a function like `main()` is **scoped** to that function and if we need them in other functions as well, we can define them as follows:
+## Functions Accepting Any Kind of Values
+
+In some situation, we might need to accept **any** input param. To do that we can:
 
 ```go
 package main
 
 import "fmt"
-
-var firstName, lastName = "Bez", "Moradi"
 
 func main() {
-	fmt.Println(concatStrings())
+	printIt(7) // 7
 }
-
-func concatStrings() string {
-	return firstName + " " + lastName
-}
-```
-
--   From now on, the variables `firstName` and `lastName` are available to all functions inside this file
--   Keep in mind that if we need to define a constant or variable like so, we cannot use the shortcut for variable declaration like:
-
-```go
-firstName := "Bez"
-```
-
--   The way we get compilation errors
-
-## How to Create A Function Which Accepts Any Kind of Value
-
--   In some situation, we might need to accept **any** input param. To do that we have:
-
-```go
-package main
-
-import "fmt"
 
 func printIt(input interface{}) {
 	fmt.Println(input)
 }
-
-func main() {
-	printIt(12)
-}
 ```
 
--   By using `interface{}`, we give a hint to Go compiler that any value is accepted. Instead of `interface{}` we can also use the `any` keyword
+By using the `interface{}` type, we give a hint to Go compiler that any value is accepted. Instead of `interface{}` we can also use the `any` keyword:
 
 ```go
 func printIt(input any) {
@@ -138,12 +114,16 @@ func printIt(input any) {
 }
 ```
 
--   We can also combine the `any` type with `switch` in order to have full control on the user input
+We can also combine the `any` type with `switch` in order to have full control on inputs:
 
 ```go
 package main
 
 import "fmt"
+
+func main() {
+	printIt(7)
+}
 
 func printIt(input any) {
 	switch input.(type) {
@@ -155,36 +135,31 @@ func printIt(input any) {
 		fmt.Println("An undefined type")
 	}
 }
-
-func main() {
-	printIt(12.1)
-}
 ```
 
--   The only thing that you need to bear in mind is the special syntax of `input.(type)`
--   Another of getting the same functionality is through the following structure:
+The only thing that you need to bear in mind is the special syntax of `input.(type)`. Another of getting the same functionality is through the following structure:
 
 ```go
 func printIt(input any) {
 	integerValue, ok := input.(int)
-
 	if !ok {
 		fmt.Println("It is not an integer")
-
 		return
 	}
 
-	fmt.Printf("It is an integer of %v", integerValue)
+	fmt.Printf("It is an integer of %v", integerValue) // It is an integer of 7
 }
 ```
 
--   The type `ok` is `bool`
-
+The type of the `ok` variable is `bool`
 
 ## Functions as First-class Citizens in Go
 
--   As in JavaScript, functions in Go are first-class citizens meaning they can be assigned to variables, passed as arguments to other functions, and returned as values from functions.
--   In the following example, we have assigned a function to a variable called `x` the called it:
+As in JavaScript, functions in Go are first-class citizens meaning they can be assigned to variables, passed as arguments to other functions, and returned as values from functions.
+
+### Anonymous Functions
+
+In the following example, we have assigned a function to a variable called `x` then called it:
 
 ```go
 package main
@@ -193,22 +168,56 @@ import "fmt"
 
 func main() {
 	x := func() {
-		message := "An anonymous function without any params"
-		fmt.Println(message)
+		fmt.Println("Anonymous function called")
 	}
-
-	x()
-
-	y := func(message string) {
-		fmt.Println(message)
-	}
-
-	y("An anonymous function with input param")
+	x() // Anonymous function called
 }
-
 ```
 
--   To return a function we have:
+To create an anonymous function then call it right away, we have:
+
+```go
+func main() {
+	func() {
+		fmt.Println("An Anonymous function called")
+	}() // An Anonymous function called
+}
+```
+
+To add input params to an anonymous function we can:
+
+```go
+func main() {
+	x := func(input string) {
+		fmt.Println(input)
+	}
+	x("Anonymous function called")
+}
+```
+
+Or if you want to call it right away you can:
+
+```go
+func main() {
+	func(input string) {
+		fmt.Println(input)
+	}("Anonymous function called")
+}
+```
+
+To have an anonymous function return some value, we can:
+
+```go
+func main() {
+	x := func(input string) string {
+		return input
+	}
+	y := x("Anonymous function called")
+	fmt.Println(y) // Anonymous function called
+}
+```
+
+To pass a function as a callback, we can:
 
 ```go
 package main
@@ -216,27 +225,7 @@ package main
 import "fmt"
 
 func main() {
-	value := functionReturningAnotherFunction()
-	fmt.Println(value())
-}
-
-func functionReturningAnotherFunction() func() string {
-	return func() string {
-		return "returned value"
-	}
-}
-
-```
-
--   To pass a function as callback :
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println(doMath(10, 12, add))
+	fmt.Println(doMath(6, 1, add)) // 7
 }
 
 func add(a, b int) int {
@@ -248,7 +237,7 @@ func doMath(a int, b int, operation func(a, b int) int) int {
 }
 ```
 
--   As another example we have:
+Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that is must be a function which accepts two input params of type integers and returns an integer as well. As another example we have:
 
 ```go
 package main
@@ -281,12 +270,10 @@ func triple(number int) int {
 }
 ```
 
--   The `transformNumbers()` function accepts two parameters: a slice of integers and a function which accepts an integer input param and returns an integer (`func(int) int`)
--   We can extract the function type into its own custom type to make our code cleaner:
+The `transformNumbers()` function accepts two parameters: a slice of integers and a function which accepts an integer input param and returns an integer (`func(int) int`). We can extract the function type into its own custom type to make our code cleaner:
 
 ```go
 type transformerType func(int) int
-
 
 func transformNumbers(numbers *[]int, transformer transformerType) []int {
 	doubles := []int{}
@@ -299,11 +286,11 @@ func transformNumbers(numbers *[]int, transformer transformerType) []int {
 }
 ```
 
--   As long as the function that we pass as the second argument to the `transformNumbers()` function accepts an input of type integer and returns an integer, we are good to go. Both `double()` and `triple()` functions meed this criteria
+As long as the function that we pass as the second argument to the `transformNumbers()` function accepts an input of type integer and returns an integer, we are good to go (Both `double()` and `triple()` functions meed this criteria).
 
-## Anonymous Functions
+### Closures
 
--   In the following program, we have specified three different anonymous functions: one without input param, one with input param, and yet another one with return type:
+Technically, when a function returns another function, it's called a **Closure**:
 
 ```go
 package main
@@ -311,45 +298,30 @@ package main
 import "fmt"
 
 func main() {
-	func() {
-		message := "An anonymous function without any params"
-		fmt.Println(message)
-	}()
+	fmt.Println(functionReturningAnotherFunction()()) // returned value
+}
 
-	func(message string) {
-		fmt.Println(message)
-	}("An anonymous function with input param")
-
-	fmt.Println(func() string {
-		return "An anonymoud function with return type"
-	}())
+func functionReturningAnotherFunction() func() string {
+	return func() string {
+		return "returned value"
+	}
 }
 ```
 
--   We can get the same result as the `double()` function but by using anonymous functions
+Or to be more verbose, we can do it this way:
 
 ```go
 func main() {
-	numbers := []int{1, 2, 3, 4, 5, 6, 7}
-	doubles := transformNumbers(&numbers, func(number int) int {
-		return number * 2
-	})
-	fmt.Println(doubles)
+	functionReturningAValue := functionReturningAnotherFunction()
+	fmt.Println(functionReturningAValue()) // returned value
 }
 ```
-
--   As seen above, the signature, body everything is the same as a normal function but it explicitly does not have any name. The main use case for an anonymous function is where another function needs a function as input param; in scenarios like this, we can define the function anonymously in place
-
-## Closures
-
--   Another feature of a First-class Citizen Function is that it can return other functions which is a great use case for closures:
+As a more practical example we have:
 
 ```go
 package main
 
 import "fmt"
-
-type transformerType func(int) int
 
 func main() {
 	double := doMath(2)
@@ -363,11 +335,11 @@ func doMath(outerParam int) func(int) int {
 }
 ```
 
--   As shown above, the `doMath()` function is returning an anonymous function. The key point here is that that the return type of the `doMath()` function must match the signature and return type of our inner anonymous function
+As shown above, the `doMath()` function is returning an anonymous function. The key point here is that that the return type of the `doMath()` function must match the signature and return type of our inner anonymous function
 
 ## Recursion
 
--   If a function calls itself, it is called Recursion. A classic example for recursion is factorial. First, let's see how we can implement a factorial function without recursion:
+If a function calls itself, it is called Recursion. A classic example for recursion is factorial. First, let's see how we can implement a factorial function without recursion:
 
 ```go
 package main
@@ -391,7 +363,7 @@ func factorial(number int) int {
 }
 ```
 
--   The recursive approach is as follows:
+The recursive approach is as follows:
 
 ```go
 func factorial(number int) int {
@@ -403,7 +375,7 @@ func factorial(number int) int {
 }
 ```
 
--   As diagram, the above function with input param of 5 works like this:
+As diagram, the above function with input param of 5 works like this:
 
 ```text
 factorial(5) Our condtion is falsy because 5 > 0                        24 * 5 = 120
@@ -416,7 +388,7 @@ factorial(5) Our condtion is falsy because 5 > 0                        24 * 5 =
 
 ## Variadic Functions
 
--   The `...` operation in the following function collects the list of stand-alone values and merge them all into a slice for us
+The `...` operation in the following function collects the list of stand-alone values and merge them all into a slice for us
 
 ```go
 package main
@@ -438,9 +410,7 @@ func sumUp(numbers ...int) int {
 }
 ```
 
--   Such a function is called Variadic
--   Keep in mind the Variadic functions can be called with zero arguments like `sumeUp()`. An another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments
--   If need be, we can extract the few first values them accumulate the rest of them into the `numbers ...int`
+Such a function is called Variadic. Keep in mind the Variadic functions can be called with zero arguments like `sumeUp()`. An another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of them into the `numbers ...int`
 
 ```go
 func sumUp(first int, numbers ...int) int {
@@ -454,8 +424,7 @@ func sumUp(first int, numbers ...int) int {
 }
 ```
 
--   In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored into the `numbers` slice
--   Now let's consider a scenario the we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we hove to do the opposite of the `...int` operation
+In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored into the `numbers` slice. Now let's consider a scenario the we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we hove to do the opposite of the `...int` operation
 
 ```go
 func main() {
@@ -464,11 +433,11 @@ func main() {
 }
 ```
 
--   As shown above, this time around we need to pass the slice we have suffixed by `...`. In other words, behind the scenes `sumUp(slice...)` will be turned into `sumUp(1, 2, 3)`
+As shown above, this time around we need to pass the slice we have suffixed by `...`. In other words, behind the scenes `sumUp(slice...)` will be turned into `sumUp(1, 2, 3)`
 
-## How to Use The `defer` Keyword with Function Calls
+## An Intro to The `defer` Keyword
 
--   What `defer` keyword does is that is like telling the computer to do something later, but before it finishes running the function which in this case is `main()`. When you use `defer`, it schedules a function to be executed just before the function where defer was used in finishes running
+What `defer` keyword does is that is like telling the computer to do something later, but before it finishes running the function which in this case is `main()`. When you use `defer`, it schedules a function to be executed just before the function where defer was used in finishes running:
 
 ```go
 package main
@@ -476,7 +445,6 @@ package main
 import "fmt"
 
 func main() {
-
 	defer foo()
 	bar()
 }
@@ -490,19 +458,17 @@ func bar() {
 }
 ```
 
--   In other words, we have:
+In other words, we have:
 
 ```go
 func main() {
-
 	defer foo()
 	bar()
-
 	// foo() will be executed exactly at this point
 }
 ```
 
--   To better figure it out we can add some logs as follows:
+To better figure it out we can add some logs as follows:
 
 ```go
 func main() {
@@ -514,7 +480,7 @@ func main() {
 }
 ```
 
--   And in the output have have:
+And in the output have have:
 
 ```text
 before foo() called
@@ -524,10 +490,8 @@ here is the last line
 foo
 ```
 
--   One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done
--   For example, When you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources.
-
--   Deferred functions run in LIFO order. For example:
+One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done. For example, When you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources.  
+Deferred functions run in LIFO order. For example:
 
 ```go
 package main
@@ -541,7 +505,7 @@ func main() {
 }
 ```
 
--   The last deferred function has to print `1` to it is the first function that will be executed; that's why we have:
+The last deferred function has to print `1` to it is the first function that will be executed; that's why we have:
 
 ```text
 1
@@ -550,7 +514,9 @@ func main() {
 ```
 
 ## An Intro to Wrapper Functions is Go
-- We can also create wrapper functions that accept another function and call it but before and after that function call, do some other operations. For example, in the following program we have created a wrapper function called `timer()` which calculated the total amount of time it takes to run its input function:
+
+We can also create wrapper functions that accept another function and call it but before and after that function call, do some other operations. For example, in the following program we have created a wrapper function called `timer()` which calculated the total amount of time it takes to run its input function:
+
 ```go
 package main
 
