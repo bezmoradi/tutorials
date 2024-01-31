@@ -1,6 +1,6 @@
 # Go > Functions
 
-Most probably the simplest form of function in Go is the one which doesn't accept any input param and also doesn't return anything:
+Most probably the simplest form of a function in Go is the one which doesn't accept any input params and also doesn't return anything:
 
 ```go
 package main
@@ -78,7 +78,7 @@ func doSomething(input1, input2 string) (returned1 string, returned2 string) {
 }
 ```
 
-As shown above, we've given names to the return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. Meanwhile, ff your want to be more explicit, you can return the values this way as well:
+As shown above, we've given names to the return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. Meanwhile, if your want to be more explicit, you can return the values this way as well:
 
 ```go
 func doSomething(input1, input2 string) (returned1 string, returned2 string) {
@@ -137,7 +137,7 @@ func printIt(input any) {
 }
 ```
 
-The only thing that you need to bear in mind is the special syntax of `input.(type)`. Another of getting the same functionality is through the following structure:
+The only thing that you need to bear in mind is the special syntax of `input.(type)`. Another way of getting the same functionality is through the following structure:
 
 ```go
 func printIt(input any) {
@@ -237,28 +237,29 @@ func doMath(a int, b int, operation func(a, b int) int) int {
 }
 ```
 
-Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that is must be a function which accepts two input params of type integers and returns an integer as well. As another example we have:
+Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that is must be a function which accepts two input params of type integers and returns an integer as well. Keep in mind that for function params, we can also remove the param names as follows:
+
+```go
+func doMath(a int, b int, operation func(int, int) int) int {
+	return operation(a, b)
+}
+```
+
+As another example we have:
 
 ```go
 package main
 
 import "fmt"
 
-func main() {
-	numbers := []int{1, 2, 3, 4, 5, 6, 7}
-	doubles := transformNumbers(&numbers, double)
-	triples := transformNumbers(&numbers, triple)
-	fmt.Println(doubles, triples)
-}
+func transformNumbers(numbers []int, transformer func(int) int) []int {
+	result := []int{}
 
-func transformNumbers(numbers *[]int, transformer func(int) int) []int {
-	doubles := []int{}
-
-	for _, value := range *numbers {
-		doubles = append(doubles, transformer(value))
+	for _, value := range numbers {
+		result = append(result, transformer(value))
 	}
 
-	return doubles
+	return result
 }
 
 func double(number int) int {
@@ -268,6 +269,14 @@ func double(number int) int {
 func triple(number int) int {
 	return number * 3
 }
+
+func main() {
+	numbers := []int{1, 2, 3, 4, 5, 6, 7}
+	doubles := transformNumbers(numbers, double)
+	triples := transformNumbers(numbers, triple)
+	fmt.Println(doubles) // [2 4 6 8 10 12 14]
+	fmt.Println(triples) // [3 6 9 12 15 18 21]
+}
 ```
 
 The `transformNumbers()` function accepts two parameters: a slice of integers and a function which accepts an integer input param and returns an integer (`func(int) int`). We can extract the function type into its own custom type to make our code cleaner:
@@ -275,14 +284,14 @@ The `transformNumbers()` function accepts two parameters: a slice of integers an
 ```go
 type transformerType func(int) int
 
-func transformNumbers(numbers *[]int, transformer transformerType) []int {
-	doubles := []int{}
+func transformNumbers(numbers []int, transformer transformerType) []int {
+	result := []int{}
 
-	for _, value := range *numbers {
-		doubles = append(doubles, transformer(value))
+	for _, value := range numbers {
+		result = append(result, transformer(value))
 	}
 
-	return doubles
+	return result
 }
 ```
 
@@ -316,6 +325,7 @@ func main() {
 	fmt.Println(functionReturningAValue()) // returned value
 }
 ```
+
 As a more practical example we have:
 
 ```go
@@ -335,7 +345,39 @@ func doMath(outerParam int) func(int) int {
 }
 ```
 
-As shown above, the `doMath()` function is returning an anonymous function. The key point here is that that the return type of the `doMath()` function must match the signature and return type of our inner anonymous function
+As shown above, the `doMath()` function is returning an anonymous function. The key point here is that the return type of the `doMath()` function must match the signature and return type of our inner anonymous function. We can rewrite the previous example where we needed `double` and `triple` function using closure:
+
+```go
+package main
+
+import "fmt"
+
+func doMath(factor int) func(number int) int {
+	return func(number int) int {
+		return factor * number
+	}
+}
+
+func transformNumbers(numbers *[]int, transformer func(int) int) []int {
+	doubles := []int{}
+
+	for _, value := range *numbers {
+		doubles = append(doubles, transformer(value))
+	}
+
+	return doubles
+}
+
+func main() {
+	double := doMath(2)
+	triple := doMath(3)
+
+	numbers := []int{1, 2, 3, 4, 5, 6, 7}
+	doubles := transformNumbers(&numbers, double)
+	triples := transformNumbers(&numbers, triple)
+	fmt.Println(doubles, triples)
+}
+```
 
 ## Recursion
 
@@ -375,15 +417,15 @@ func factorial(number int) int {
 }
 ```
 
-As diagram, the above function with input param of 5 works like this:
+As a diagram, the above function with input param of 5 works like this:
 
 ```text
-factorial(5) Our condtion is falsy because 5 > 0                        24 * 5 = 120
-	factorial(4) Our condtion is falsy because 4 > 0                     6 * 4 = 24
-		factorial(3) Our condtion is falsy because 3 > 0                 2 * 3 = 6
-			factorial(2) Our condtion is falsy because 2 > 0             1 * 2 = 2
-				factorial(1) Our condtion is falsy because 1 > 0         1 * 1 = 1
-					factorial(0) Our condtion is TRUTHY because 0 == 0   1
+factorial(5) Our condition is falsy because 5 > 0                        24 * 5 = 120
+	factorial(4) Our condition is falsy because 4 > 0                     6 * 4 = 24
+		factorial(3) Our condition is falsy because 3 > 0                 2 * 3 = 6
+			factorial(2) Our condition is falsy because 2 > 0             1 * 2 = 2
+				factorial(1) Our condition is falsy because 1 > 0         1 * 1 = 1
+					factorial(0) Our condition is TRUTHY because 0 == 0   1
 ```
 
 ## Variadic Functions
@@ -410,7 +452,7 @@ func sumUp(numbers ...int) int {
 }
 ```
 
-Such a function is called Variadic. Keep in mind the Variadic functions can be called with zero arguments like `sumeUp()`. An another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of them into the `numbers ...int`
+Such a function is called Variadic. Keep in mind the these functions can be called with zero arguments like `sumeUp()`. An another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of them into the `numbers ...int`
 
 ```go
 func sumUp(first int, numbers ...int) int {
@@ -437,7 +479,7 @@ As shown above, this time around we need to pass the slice we have suffixed by `
 
 ## An Intro to The `defer` Keyword
 
-What `defer` keyword does is that is like telling the computer to do something later, but before it finishes running the function which in this case is `main()`. When you use `defer`, it schedules a function to be executed just before the function where defer was used in finishes running:
+What `defer` keyword does is that is like telling the compiler to do something later, but before it finishes running the function which in this case is `main()`. When you use `defer`, it schedules a function to be executed just before the function, where defer was used in, finishes running:
 
 ```go
 package main
@@ -545,3 +587,41 @@ func timer(f func()) {
 	fmt.Printf("Total time executing this function is: %v", elapsed)
 }
 ```
+
+
+
+## Inlining Decisions by Go Compiler
+
+Inlining in the context of Go (or any programming language) refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings.  
+Inlining can make your code faster, but it can also increase the size of the compiled code. It's a trade-off that the compiler balances based on what it thinks will be most efficient. As an example, let's dive deep into the following program:
+
+```go
+package main
+
+import "fmt"
+
+func add(a, b int) int {
+	return a + b
+}
+
+func main() {
+	x := 5
+	y := 7
+
+	result := add(x, y)
+
+	fmt.Println("Result:", result)
+}
+```
+When the compiler sees the `add` function being called inside the `main` function, it can choose to inline the `add` function. This means the `add` function's code will be directly placed inside the `main` function, instead of creating a separate execution context for it:
+
+```go
+func main() {
+	x := 5
+	y := 7
+	result := x + y
+
+	fmt.Println("Result:", result)
+}
+```
+The addition operation `(x + y)` from the `add` function has been directly placed inside the `main` function, eliminating the need for a separate function call.

@@ -1,15 +1,14 @@
 # Go > Error Handling
 
-Go designers believe that coupling exceptions to a control structure, as in the try-catch-finally idiom, results in convoluted code. It also tends to encourage programmers to label too many ordinary errors, such as failing to open a file, as exceptional which in reality it isn't.  
-In Go, the `error` interface defines what can be considered as an `error` type. 
+Go designers believe that coupling exceptions to a control structure, as in the try-catch-finally idiom, results in convoluted code. It also tends to encourage programmers to label too many ordinary errors, such as failing to open a file, as exceptional which in reality it isn't. In Go, the `error` interface defines what can be considered as an `error` type.
 
 ```go
 type error interface {
 	Error() string
 }
 ```
-In other words, any type that has an `Error` method attached to it is considered an an `error` in Go.
 
+In other words, any type that has an `Error` method attached to it is considered an an `error` in Go.
 
 ## An Intro to The `errors` Package
 
@@ -35,11 +34,11 @@ func (e *errorString) Error() string {
 }
 ```
 
-What `New` function does is that it creates a variable of type `errorString` and pass its input param as its `s` field. For the `errorString` type to be of type `error` interface, it must have an `Error` method which returns a string. 
+What `New` function does is that it creates a variable of type `errorString` and pass its input param as its `s` field. For the `errorString` type to be of type `error` interface, it must have an `Error` method which returns a string.
 
 ## Introduction to The `log` Package
 
-One of the differences between the `fmt.Println` function and `log.Println` is that the latter also prints the date and time
+One of the differences between the `fmt.Println` function and `log.Println` is that the latter also prints the date and time.
 
 ```go
 package main
@@ -54,8 +53,7 @@ func main() {
 	log.Print(err) // 2024/01/08 18:40:38 this is a custom-made error
 }
 ```
-
-One other difference is that with the `log` package we can define **where** the log needs to go:
+The `fmt` package formats an error value by calling its `Error` method. One other difference is that with the `log` package we can define **where** the log needs to go:
 
 ```go
 package main
@@ -82,9 +80,10 @@ func main() {
 }
 ```
 
-In this program, first we create a brand-new file called `logs.txt` then by calling `log.SetOutput(f)`, we instruct the `log` package to send logs to that file instead of `Stdout`.   
+In this program, first we create a brand-new file called `logs.txt` then by calling `log.SetOutput(f)`, we instruct the `log` package to send logs to that file instead of `Stdout`.
 
 ## Difference between `Exit` and `Panic`
+
 The `log.Fatal` function calls `os.Exit(1)` and the program terminates immediately while deferred functions are not run.
 
 ```go
@@ -129,7 +128,7 @@ func main() {
 }
 ```
 
-Simply put, `log.Panic` function implies that there is an issue but sill we have a change to recover our program from terminating:
+Simply put, `log.Panic` function implies that there is an issue but sill we have a chance to recover our program from terminating:
 
 ```go
 package main
@@ -192,9 +191,10 @@ func deferredFunction() {
 
 func main() {
 	defer deferredFunction()
-
 }
 ```
+
+`recover` is another built-in function used to regain control after a panic. It is typically used in a deferred function to capture the panic value and resume normal execution. The recover function returns the value that was passed to panic. If there is no panic or if `recover` is called outside the deferred function or after the panic has propagated outside that function, it returns `nil`.
 
 ## Create Custom Errors
 
@@ -213,7 +213,6 @@ func main() {
 	fmt.Print(err) // this is a custom-made error
 }
 ```
-
 
 Let's create a factory functions for creating errors:
 

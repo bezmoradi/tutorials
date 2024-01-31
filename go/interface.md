@@ -1,14 +1,14 @@
 # Go > Interface
 
--   In Go, we as developers do not have to put together any manual code to link a struct with an interface; Go takes care of all the matching for us!
--   In the following program, we have an interface called `paymentInterface` and the `doPayment(p paymentInterface)` function accepts any params that matches this interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `paymentInterface` interface. Go takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `paymentInterface` interface, we are good to go otherwise at compile time we get an error
+In Go, interfaces serve as blueprints that describe the expected behaviors of types. Much like the saying "If it walks like a duck and it quacks like a duck, then it must be a duck", if a type adheres to the methods specified by an interface, it is treated as if it implements that interface (For more information, refer to [Duck typing](https://en.wikipedia.org/wiki/Duck_typing)).  
+Technically, we don't need to manually link a struct with an interface because Go handles the matching process automatically. If the type exhibits the required behaviors, it's effectively a 'duck' in the context of that interface and Go seamlessly recognizes and utilizes it.
 
 ```go
 package main
 
 import "fmt"
 
-type paymentInterface interface {
+type payable interface {
 	pay() string
 }
 
@@ -16,200 +16,294 @@ type stripe struct {
 	name string
 }
 
+func (s stripe) pay() string {
+	return "Paid by " + s.name
+}
+
 type paypal struct {
 	name string
+}
+
+func (p paypal) pay() string {
+	return "Paid by " + p.name
 }
 
 func main() {
 	stripe := stripe{name: "Stripe"}
 	paypal := paypal{name: "PayPal"}
+	payments := []payable{stripe, paypal}
 
-	doPayment(stripe)
-	doPayment(paypal)
-}
-
-func doPayment(p paymentInterface) {
-	fmt.Println(p.pay())
-}
-
-func (s stripe) pay() string {
-	return "Paid by" + s.name
-}
-
-func (p paypal) pay() string {
-	return "Paid by" + p.name
+	for _, payment := range payments {
+		fmt.Println(payment.pay())
+	}
 }
 ```
 
--   As another example of interface we have:
+In the above program we have a `payable` interface and as both `stripe` and `paypal` structs implement that interface by exposing the `pay` method, they can be considered as a `payable` type; that's why they can easily be added to the `payments` variable which is a slice of `paylable` type. We can refactor the above code as follows:
+
+```go
+func doPayment(p payable) {
+	fmt.Println(p.pay())
+}
+
+func main() {
+	stripe := stripe{name: "Stripe"}
+	doPayment(stripe)
+
+	paypal := paypal{name: "PayPal"}
+	doPayment(paypal)
+}
+```
+
+In the above program, the `doPayment(p payable)` function accepts any params that matches that interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `payable` interface; Go takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `payable` interface by having a `pay` method, we are good to go otherwise we'll get an error at compile time.
+
+## Type Assertion
+
+Type assertion is a way to access the underlying concrete value of an interface:
+
+```go
+func (s stripe) stripeSpecificMethod() string {
+	return s.name + " specific method"
+}
+
+func (s paypal) paypalSpecificMethod() string {
+	return s.name + " specific method"
+}
+```
+
+First, let's add the above two methods each for one of the types we have already defined. Now let's update the `doPayment` function as follows:
+
+```go
+func doPayment(p payable) {
+	if isStripe, ok := p.(stripe); ok {
+		fmt.Println(isStripe.stripeSpecificMethod())
+	}
+	if isPaypal, ok := p.(paypal); ok {
+		fmt.Println(isPaypal.paypalSpecificMethod())
+	}
+}
+```
+
+`p.(stripe)` is the type assertion syntax which returns two values: the concrete value which in this case is `stripe` type which is stored inside the `isStripe` variable and also a boolean value stored in `ok` which will be truthy if the assertion is successful. We can improve the above code using the `switch` statement:
+
+```go
+func doPayment(p payable) {
+	switch t := p.(type) {
+	case stripe:
+		fmt.Println(t.stripeSpecificMethod())
+	case paypal:
+		fmt.Println(t.paypalSpecificMethod())
+	}
+}
+```
+
+If we need to define an interface which includes a method with input params, we can either make named params or just specify the type:
 
 ```go
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
-type Shape interface {
-	getArea() float64
+type payable interface {
+	pay(amount float64) string
 }
 
-type triangle struct {
-	height float64
-	base   float64
+type stripe struct {
+	name string
 }
 
-type square struct {
-	sideLength float64
+func (s stripe) pay(amount float64) string {
+	return strconv.Itoa(int(amount)) + " paid by " + s.name
+}
+
+type paypal struct {
+	name string
+}
+
+func (p paypal) pay(amount float64) string {
+	return strconv.Itoa(int(amount)) + " paid by " + p.name
+}
+
+func doPayment(p payable, amount float64) {
+	fmt.Println(p.pay(amount))
 }
 
 func main() {
-	t := triangle{base: 10, height: 10}
-	s := square{sideLength: 10}
+	stripe := stripe{name: "Stripe"}
+	doPayment(stripe, 50.50)
 
-	printArea(t)
-	printArea(s)
-}
-
-func printArea(shape Shape) {
-	fmt.Println(shape.getArea())
-}
-
-func (s square) getArea() float64 {
-	return s.sideLength * s.sideLength
-}
-
-func (t triangle) getArea() float64 {
-	return 0.5 * t.base * t.height
-}
-```
-
-## Interface Contracts with Input Params
-
--   If we need to define an interface which includes a method with input params, we just need to define the type and contrary to a language like TS, there is no need to add a param name
-
-```go
-type Printable interface {
-	print(string, string) string
-}
-```
-
-## Naming Interface
-
--   It's not forced but it's convention that if your interface has only one method, the name of the interface is the same as that method + "er"
-
-```go
-type saver interface {
-	save()
+	paypal := paypal{name: "PayPal"}
+	doPayment(paypal, 100.10)
 }
 ```
 
 ## Embedded Interfaces
 
--   The `embeddedInterface` tells Go that any value of type `embeddedInterface` must have all the methods of the `saver` and also the `display()` method
+The `payable` interface tells Go that any value of type `payable` must have all the methods of the `payable` and also the `showBalance` method:
 
 ```go
-type saver interface {
-	save()
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+type balance interface {
+	showBalance() float64
 }
 
-type embeddedInterface interface {
-	saver
-	display()
+type payable interface {
+	balance
+	pay(amount float64) string
+}
+
+type stripe struct {
+	name    string
+	deposit float64
+}
+
+func (s *stripe) pay(amount float64) string {
+	s.deposit = s.deposit - amount
+
+	return strconv.Itoa(int(amount)) + " paid by " + s.name
+}
+
+func (s stripe) showBalance() float64 {
+	return s.deposit
+}
+
+type paypal struct {
+	name    string
+	deposit float64
+}
+
+func (p *paypal) pay(amount float64) string {
+	p.deposit = p.deposit - amount
+
+	return strconv.Itoa(int(amount)) + " paid by " + p.name
+}
+
+func (p paypal) showBalance() float64 {
+	return p.deposit
+}
+
+func doPayment(p payable, amount float64) {
+	fmt.Println(p.pay(amount))
+	fmt.Println("Balance is:", p.showBalance())
+}
+
+func main() {
+	stripe := stripe{name: "Stripe", deposit: 100}
+	doPayment(&stripe, 50.50)
+
+	paypal := paypal{name: "PayPal", deposit: 300}
+	doPayment(&paypal, 100.10)
 }
 ```
 
 ## How to Explicitly Assign A Concrete Type to An Abstract Type
 
--   In the following program we have an interface called `subscribeable` which can be considered as an **Abstract type** and also a struct called `internetSubscription` which is considered as a **Concrete Type**. By assigning a concrete type to an abstract one, we ask Go to check if the concrete variable **HAS** all properties of the interface; in other words, as long as the `internetSubscription` type has the `subsribe()` method on it, the compiler is OK with that.
+In the following program we have an interface called `payable` which can be considered as an **Abstract type** and also a struct called `stripe` which is considered as a **Concrete Type**. By assigning a concrete type to an abstract one, we ask Go to check if the concrete variable **has** all properties of the interface; in other words, as long as the `stripe` struct has the `pay` method, the compiler is OK with that:
 
 ```go
 package main
 
 import "fmt"
 
+type payable interface {
+	pay() string
+}
+
+type stripe struct {
+	name string
+}
+
+func (s stripe) pay() string {
+	return "Paid by " + s.name
+}
+
 func main() {
-	is := internetSubscription{packageName: "5G", packageAmout: 100.00}
-
-	var internetSubscriber subscribeable
-	internetSubscriber = is
-
-	internetSubscriber.subscribe()
-}
-
-// This is a concrete type
-type internetSubscription struct {
-	packageName  string
-	packageAmout float64
-}
-
-func (is internetSubscription) subscribe() {
-	fmt.Println("subscribed!")
-}
-
-// This is an abstract type
-type subscribeable interface {
-	subscribe()
+	var payer payable
+	stripe := stripe{name: "Stripe"}
+	payer = stripe
+	fmt.Println(payer.pay())
 }
 ```
 
 ## Let's mimic How Interface in Go Can Be Useful while Dealing With Different DBs
 
--   In the following example, the `accessor` interface helps us add a layer of abstraction to work with different databases:
+In the following example, the `DB` interface helps us add a layer of abstraction to work with different databases:
 
 ```go
 package main
 
 import "fmt"
 
-type person struct {
+type DB interface {
+	save(userModel)
+	retrieve(int) userModel
+}
+
+type userModel struct {
+	id        int
 	firstName string
 	lastName  string
 }
 
-type mongo map[int]person
-
-func (m mongo) save(n int, p person) {
-	m[n] = p
+type mongodb struct {
+	name string
+	data map[int]userModel
 }
 
-func (m mongo) retrieve(n int) person {
-	return m[n]
+func (m mongodb) save(u userModel) {
+	m.data[u.id] = u
 }
 
-type postgres map[int]person
-
-func (p postgres) save(n int, per person) {
-	p[n] = per
+func (m mongodb) retrieve(id int) userModel {
+	return m.data[id]
 }
 
-func (p postgres) retrieve(n int) person {
-	return p[n]
+type postgres struct {
+	name string
+	data map[int]userModel
 }
 
-type accessor interface {
-	save(int, person)
-	retrieve(int) person
+func (m postgres) save(u userModel) {
+	m.data[u.id] = u
 }
 
-func set(a accessor, n int, p person) {
-	a.save(n, p)
+func (m postgres) retrieve(id int) userModel {
+	return m.data[id]
 }
 
-func get(a accessor, n int) person {
-	return a.retrieve(n)
+func setter(db DB, u userModel) {
+	db.save(u)
+}
+
+func getter(db DB, id int) userModel {
+	return db.retrieve(id)
 }
 
 func main() {
-	p1 := person{firstName: "Bez", lastName: "Moradi"}
-	p2 := person{firstName: "Far", lastName: "Fahim"}
-	p3 := person{firstName: "Dan", lastName: "Moradi"}
+	u1 := userModel{id: 1, firstName: "John", lastName: "Doe"}
+	u2 := userModel{id: 2, firstName: "Jane", lastName: "Doe"}
+	u3 := userModel{id: 3, firstName: "John", lastName: "Doe"}
 
-	myMongo := mongo{}
-	myPostgres := postgres{}
+	mongodb := mongodb{name: "MongoDB", data: map[int]userModel{}}
+	postgres := postgres{name: "Postgres", data: map[int]userModel{}}
 
-	set(myMongo, 1, p1)
-	set(myMongo, 2, p2)
-	set(myPostgres, 1, p3)
+	setter(mongodb, u1)
+	setter(mongodb, u2)
+	setter(postgres, u3)
 
-	fmt.Println(get(myPostgres, 1))
+	fmt.Println(getter(postgres, 3))
 }
 ```
+
+## How to User Interfaces with Generics?
+
+One of the use cases of interfaces in Go is with generics. To know more about that, you can visit the **Generics** tutorial in this series.

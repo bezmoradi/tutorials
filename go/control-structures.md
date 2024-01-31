@@ -23,7 +23,7 @@ func main() {
 }
 ```
 
-Unlike some other programming languages, Go does not place any parenthesis around the `if` condition.  
+Unlike some other programming languages, Go does not require you to place any parenthesis around the `if` condition but if you do so, still it's valid code.  
 As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block.  
 In Go, we have the option to place some statements in front of `if`. As an example, let's first see the normal version of writing conditional flow:
 
@@ -34,6 +34,10 @@ import (
 	"fmt"
 )
 
+func isEven(number int) bool {
+	return number%2 == 0
+}
+
 func main() {
 	isEven := isEven(2)
 	if !isEven {
@@ -42,13 +46,9 @@ func main() {
 		fmt.Println("It's even")
 	}
 }
-
-func isEven(number int) bool {
-	return number%2 == 0
-}
 ```
 
-The `isEven` function returns `true` if the input param is even and `false` otherwise. Now let's refactor our code to make it a little bit more concise by placing the functional call in front of the `if` statement:
+The `isEven` function returns `true` if the input param is even and `false` otherwise. Now let's refactor our code to make it a little bit more concise by placing the function call in front of the `if` statement:
 
 ```go
 func main() {
@@ -62,7 +62,7 @@ func main() {
 }
 ```
 
-Unlike the previous example where `something` was accessible only inside the `if` block, the `isEven` variable is accessible within our control structure; in other words, it's accessible both inside the `if` and `else` blocks and if we want to use it outside those blocks, we'll get compilation error.
+Unlike the previous example where `something` was accessible only inside the `if` block, the `isEven` variable is accessible within our control structure; in other words, it's accessible both inside the `if` and `else` blocks but still if we want to access it outside those blocks, we'll get compilation error.
 
 ### Comma OK Idiom
 
@@ -85,8 +85,7 @@ func main() {
 }
 ```
 
-Here, `url` will contain the value associated with the key "google", and `ok` will be `true` if the key exists in the map. If the key doesn't exist though, `ok` will be `false`.  
-We can also write the above `if` statement (a.k.a control structure) as follows to be more concise:
+Here, `url` will contain the value associated with the key "google", and `ok` will be `true` because that key exists in the map. If the key doesn't exist though, `ok` will be `false`. We can also write the above `if` statement as follows to be more concise:
 
 ```go
 if url, ok := sites["google"]; ok {
@@ -96,8 +95,7 @@ if url, ok := sites["google"]; ok {
 
 ### Comparing Composite Types
 
-By composite types, we mean slices, maps, and structs. Contrary to most of other programming languages like JavaScript, in Go we do not have a `===` operator for deep equality; instead, the `==` operator is used for both shallow and deep equality depending on the context.  
-For structs including primitive types like integers, floats, strings etc, we can use the traditional `if` statement for equality check:
+By composite types, we mean slices, maps, and structs. Contrary to most of other programming languages like JavaScript, in Go we do not have a `===` operator for deep equality; instead, the `==` operator is used for both shallow and deep equality depending on the context. For structs including primitive types like integers, floats, strings etc, we can use the traditional `if` statement for equality check:
 
 ```go
 package main
@@ -130,7 +128,7 @@ func main() {
 }
 ```
 
-But Go does not allow direct comparison of structs if they contain slices, maps, or functions. To achieve deep equality in such cases, you'll need to use reflection:
+But Go does not allow direct comparison of structs if they contain slices, maps, or functions. To achieve deep equality in such cases, you'll need to use the `reflect` built-in package:
 
 ```go
 package main
@@ -195,7 +193,7 @@ func main() {
 
 	for count < 7 {
 		fmt.Print(count)
-		count += 1
+		count += 1 // Or count++
 	}
 }
 
@@ -236,8 +234,7 @@ func main() {
 }
 ```
 
-This Go code snippet defines a simple program using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10.  
-We can also use `return` instead of `break`; the problem though is that `fmt.Println("The end")` wont' be run anymore that way. To fix that we have:
+This Go code snippet defines a simple program using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10. We can also use `return` instead of `break`; the problem though is that `fmt.Println("The end")` wont' be run anymore that way. To fix that we have:
 
 ```go
 func main() {
@@ -282,9 +279,7 @@ func main() {
 }
 ```
 
-If you do not care about individual indexes or values, you can replace them by underscore as in `for _, value := range slice {}`.
-
-Likewise, we can loop through maps as follows:
+If you do not care about individual indexes or values, you can replace them by an underscore as in `for _, value := range slice {}`. Likewise, we can loop through maps as follows:
 
 ```go
 func main() {
@@ -308,8 +303,7 @@ amazon https://amazon.com
 
 ## Switch Statement
 
-Earlier we save how we can use `else if` statement when we have more than one condition to evaluate; as another workaround, we can use the `switch` statement when we have multiple conditions to evaluate.
-Contrary to other languages, in Go there is no need to add the `break` statement after each `case` because it will be done automatically for us;
+Earlier we saw how we can use the `else if` statement when we have more than one condition to evaluate; as another workaround, we can use the `switch` statement when we have multiple conditions to evaluate. Contrary to other languages, in Go there is no need to add the `break` statement after each `case` because it will be done automatically for us:
 
 ```go
 package main
@@ -346,7 +340,7 @@ func main() {
 }
 ```
 
-In order to break out of outer loop while using the `switch` statement, we cannot use the `break` keyword because it does not exit the program; instead we must use the `return` keyword:
+In the following program, in order to break out of the loop while using the `switch` statement, we cannot use the `break` keyword because it does not exit the program; instead we must use the `return` keyword:
 
 ```go
 package main
@@ -385,14 +379,13 @@ func main() {
 		} else if input == 2 {
 			fmt.Println("It's 2")
 		} else {
-			return
+			break
 		}
 	}
 }
 ```
 
-Inside the `else` block, instead of `return`, we can also use `break` to exit out of the program.
-
+Inside the `else` block, instead of `break`, we can also use `return` to exit out of the program.
 There might be some specific use cases that no matter what the result of a `case` is, we want the next `case` to run as well:
 
 ```go
