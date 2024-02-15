@@ -1,6 +1,6 @@
 # Go > Testing
 
-To write a test, create a new file ending in `_test.go`. First let's create a function called `concatTwoStrings()` in `main.go` file:
+To write a test, create a new file ending in `_test.go`. First let's create a function called `concatTwoStrings` in `main.go` file:
 
 ```go
 package main
@@ -31,11 +31,11 @@ func TestConcatTwoStrings(t *testing.T) {
 }
 ```
 
-We can call the test function whatever we want but the VSCode extension asks us to start the name with `Test`. By convention, we can add the name of the function being tested like `TestConcatTwoStrings`.
+We can call the test function whatever we want but the VSCode extension asks us to start the name with `Test`. By convention, we can add the name of the function being tested like `TestConcatTwoStrings` (Another valid name for our test function would be `Test_concat_two_strings`)
 
 ## Defining Test Cases
 
-Within the `TestConcatTwoStrings` function, we can define multiple test cases defined using `t.Run`. Each test case has a description (a string) and a function that contains the actual test logic:
+Within the `TestConcatTwoStrings` function, we can define multiple test cases using `t.Run`. Each test case has a description (a string) and a function that contains the actual test logic:
 
 ```go
 func TestConcatTwoStrings(t *testing.T) {
@@ -53,14 +53,6 @@ func TestConcatTwoStrings(t *testing.T) {
 		}
 	})
 }
-```
-
-## Test Coverage
-
-In order to check the coverage metrics, you can run the `test` command with `-cover` flag as follows:
-
-```go
-$ go test -cover
 ```
 
 ## Integration Tests
@@ -162,13 +154,13 @@ PASS
 ok  	playground/src/api/services	0.756s
 ```
 
-Our function is called `1000000000` times and on average it takes `0.5125` nano seconds per operation
+Our function is called `1,000,000,000` times and on average it takes `0.5125` nano seconds per operation
 
 ## Test Coverage
 
 To see what percentage of our codebase is covered using tests, we can use the `-cover` flag as follows:
 
-```text
+```sh
 & go test -cover
 PASS
 coverage: 50.0% of statements
@@ -177,13 +169,13 @@ ok  	playground	0.169s
 
 As shown above, `50%` of our main code is covered using tests which is not ideal! Also we can output the result into a file then open that file inside the browser. To do that, by running the following command a new file called `output.txt` will be created:
 
-```text
+```sh
 & go test -coverprofile output.txt
 ```
 
 The `output.txt` file includes the coverage results. In order to load that file into as an HTML document and show it inside the browser, we need to run the following command:
 
-```text
+```sh
 & go tool cover -html=output.txt
 ```
 
@@ -191,7 +183,7 @@ As soon as you hit enter, a new browser tab will be popped up showing the covera
 
 ## Table Test
 
-A table test is a testing technique used to systematically test a function or method with multiple inputs and expected outputs. Instead of writing individual test cases for each input-output pair, you organize the test data in a tabular format (often a slice of structs or arrays) and iterate over the table to run the tests. As an exercise, we are going to created a function called `stringToSlug` which is responsible for replacing any whitespace with dash and remove any non-roman and non-digit characters:
+A table test is a testing technique used to systematically test a function or method with multiple inputs and expected outputs. Instead of writing individual test cases for each input/output pair, you organize the test data in a tabular format (often a slice of structs or arrays) and iterate over that to run the tests. As an exercise, we are going to created a function called `stringToSlug` which is responsible for replacing any whitespace with dash and remove any non-roman and non-digit characters:
 
 ```go
 package main
@@ -289,31 +281,31 @@ func TestStringToSlug(t *testing.T) {
 
 In order to run all tests in the current directory, we can do:
 
-```text
+```sh
 $ go test
 ```
 
 To test a single test we can:
 
-```text
+```sh
 $ go test -run TestMyFunction
 ```
 
 To test groups of tests, first we need to split tests into groups by some naming convention. For example, by adding the `TestGroup` as a prefix to test names like `TestGroupFuncA` and `TestGroupFuncB` then while running the test enter:
 
-```text
+```sh
 $ go test -run TestGroup
 ```
 
-All those test with such prefix will be run. And to run all tests in all packages we have:
+Behind the scenes, it works like a regex with the `TestGroup*` rule which runs all tests with such a prefix. And to run all tests in all packages we have:
 
-```text
+```sh
 $ go test ./...
 ```
 
 ## How to Create A Setup File?
 
-In order to stick to the DRY (Don't Repeat Yourself) principle, in Go we can create a special file called `setup_test.go` as follows which will be responsible for prepare some stuff that can be used throughout all other test files:
+In order to stick to the DRY (Don't Repeat Yourself) principle, in Go we can create a special file called `setup_test.go` as follows which will be responsible for preparing some stuff that can be used throughout all other test files:
 
 ```go
 package main
@@ -330,12 +322,53 @@ func TestMain(m *testing.M) {
 }
 ```
 
-From now on, as soon as we run `go test ./...`, the compiler first run this file then all other tests; that's why the `GlobalVariable` constant will be available in all other tests.
+From now on, as soon as we run `go test ./...`, the Go test runner first runs this file then all other tests; that's why the `GlobalVariable` constant will be available in all other tests.
 
 ## How to Separate Integration Tests from Unit Tests?
 
-Simply by adding `//go:build integration` at the very first line of your test files, the Go test runner would assume that file as an integration test and by default won't run it. In order to run it, we should add the following flag:
+Simply by adding `//go:build integration` at the very first line of your test files, the Go test runner would consider that file as an integration test and by default won't run it. In order to run it, we should add the following flag:
 
-```text
+```sh
 $ go test -tags=integration ./...
 ```
+
+## How to Add Helper Functions to Test Files?
+
+We can simply move any code duplication into a helper function. To see how we can do that, let's consider the previously-reviewed `main.go` file:
+
+```go
+package main
+
+import "fmt"
+
+func concatTwoStrings(s1 string, s2 string) string {
+	return s1 + s2
+}
+
+func main() {
+	fmt.Println(concatTwoStrings("Go", "lang"))
+}
+```
+
+And the `main_test.go` file is as follows:
+
+```go
+package main
+
+import "testing"
+
+func TestConcatTwoStrings(t *testing.T) {
+	result := concatTwoStrings("Go", "lang")
+	assert(t, result, "Golangf")
+}
+
+func assert(t *testing.T, got, want string) {
+	t.Helper()
+
+	if got != want {
+		t.Errorf("expected %v but got %v", want, got)
+	}
+}
+```
+
+The important thing about the `assert` helper function is calling `t.Helper()` which tells the test suite that this method is a helper. By doing this when it fails the line number reported will be in our function call rather than inside our test helper. This will help other developers track down problems easier.

@@ -6,7 +6,7 @@ The built-in `encoding/json` package is Go is responsible for working with JSON 
 func Marshal(v any) ([]byte, error)
 ```
 
-As shown above, `Marshal` gets input param of any type and returns`[]byte` (Read it as a slice of `byte`) or `error`. To make our code testable, we are goring to create a function called `jsonEncoder` as follows:
+As shown above, `Marshal` gets input param of any type and returns`[]byte` and `error` (Read `[]byte` as "a slice of byte"). To make our code testable, we are goring to create a function called `jsonEncoder` as follows:
 
 ```go
 package main
@@ -55,8 +55,7 @@ It outputs:
 {"name":"Go","use_cases":["Cloud And Network Services","Web Development","Command-line Interfaces","DevOps And Site Reliability"]}
 ```
 
-An important note while working with either `Marshal` or `Unmarshal` functions is that the struct fields **must** be PascalCase otherwise Go cannot figure it out.  
-
+An important note while working with either `Marshal` or `Unmarshal` functions is that the initial letter of struct fields must be uppercase otherwise Go cannot figure it out.  
 The type of `byteSlice` variable is `[]uint8` and by taking a peek at `https://go.dev/ref/spec#Types`, we will see that `uint8` is `the set of all unsigned 8-bit integers (0 to 255)`. Technically, in order to see a human-readable format of a `uint8` type, we need to cast it to the `string` type; in other words, `string(byteSlice)` shows a string representation of any variable with the `uint8` type. Now let's create a file named `main_test.go` to add tests for our function:
 
 ```go
@@ -113,6 +112,7 @@ func TestJsonEncoder(t *testing.T) {
 	}
 }
 ```
+
 This is a table test to test different edge cases.
 
 ## How to Convert JSON to Struct
@@ -230,6 +230,7 @@ type Writer interface {
 	Write(p []byte) (n int, err error)
 }
 ```
+
 As shown above, `Writer` is an interface meaning any other type with the `Write` method attached to it is going to be of type `Writer` and can be used wherever this interface is needed. For example, [json.NewEncoder](https://pkg.go.dev/encoding/json#NewEncoder) function needs a type of `Writer` as its input param:
 
 ```go
@@ -276,6 +277,7 @@ func main() {
 	encoder.Encode(l)
 }
 ```
+
 By the same token, the `NewDecoder` function accepts any type as input param that implements the `io.Reader` with this signature:
 
 ```go
@@ -283,11 +285,13 @@ type Reader interface {
 	Read(p []byte) (n int, err error)
 }
 ```
+
 As the `os.Open` function returns a `File` type and this type has a [Read](https://pkg.go.dev/os#File.Read) function with the following signature:
 
 ```go
 func (f *File) Read(b []byte) (n int, err error)
 ```
+
 We can simply pass it to the `NewEncoder` function as shown below:
 
 ```go

@@ -7,74 +7,80 @@ package main
 
 import "fmt"
 
-func main() {
-	doSomething() // Something
-}
-
 func doSomething() {
 	fmt.Println("Something")
+}
+
+func main() {
+	doSomething() // Something
 }
 ```
 
 In order for the above function to return something we have:
 
 ```go
-func main() {
-	fmt.Println(doSomething()) // Something
-}
-
 func doSomething() string {
 	return "Something"
+}
+
+func main() {
+	fmt.Println(doSomething()) // Something
 }
 ```
 
 In order to receive function params we can:
 
 ```go
-func main() {
-	fmt.Println(doSomething("Something")) // Something
-}
-
 func doSomething(input string) string {
 	return input
+}
+
+func main() {
+	fmt.Println(doSomething("Something")) // Something
 }
 ```
 
 If input params are of the same type, we can write our function like so as well:
 
 ```go
-func main() {
-	fmt.Println(doSomething("Something", "Something else")) // Something Something else
-}
-
 func doSomething(input1, input2 string) string {
 	return input1 + " " + input2
+}
+
+func main() {
+	fmt.Println(doSomething("Something", "Something else")) // Something Something else
 }
 ```
 
 In Go, any function can return multiple values as follows:
 
 ```go
-func main() {
-	fmt.Println(doSomething("Something", "Something else")) // Something Something else
-}
+package main
+
+import "fmt"
 
 func doSomething(input1, input2 string) (string, string) {
 	return input1, input2
+}
+
+func main() {
+	firstReturnedValue, secondReturnedValue := doSomething("Something", "Something else")
+	fmt.Println(firstReturnedValue)  // Something
+	fmt.Println(secondReturnedValue) // Something else
 }
 ```
 
 Another syntax for returning multiple values is as follows:
 
 ```go
-func main() {
-	fmt.Println(doSomething("Something", "Something else")) // Something Something else
-}
-
 func doSomething(input1, input2 string) (returned1 string, returned2 string) {
 	returned1 = input1
 	returned2 = input2
 	return
+}
+
+func main() {
+	fmt.Println(doSomething("Something", "Something else")) // Something Something else
 }
 ```
 
@@ -90,19 +96,19 @@ func doSomething(input1, input2 string) (returned1 string, returned2 string) {
 
 ## Functions Accepting Any Kind of Values
 
-In some situation, we might need to accept **any** input param. To do that we can:
+In some situations, we might need to accept **any** input param. To do that we can:
 
 ```go
 package main
 
 import "fmt"
 
-func main() {
-	printIt(7) // 7
-}
-
 func printIt(input interface{}) {
 	fmt.Println(input)
+}
+
+func main() {
+	printIt(7) // 7
 }
 ```
 
@@ -114,16 +120,12 @@ func printIt(input any) {
 }
 ```
 
-We can also combine the `any` type with `switch` in order to have full control on inputs:
+We can also combine the `any` type with `switch` and type assertion in order to have full control on inputs:
 
 ```go
 package main
 
 import "fmt"
-
-func main() {
-	printIt(7)
-}
 
 func printIt(input any) {
 	switch input.(type) {
@@ -134,6 +136,10 @@ func printIt(input any) {
 	default:
 		fmt.Println("An undefined type")
 	}
+}
+
+func main() {
+	printIt(7)
 }
 ```
 
@@ -150,8 +156,6 @@ func printIt(input any) {
 	fmt.Printf("It is an integer of %v", integerValue) // It is an integer of 7
 }
 ```
-
-The type of the `ok` variable is `bool`
 
 ## Functions as First-class Citizens in Go
 
@@ -224,16 +228,16 @@ package main
 
 import "fmt"
 
-func main() {
-	fmt.Println(doMath(6, 1, add)) // 7
-}
-
 func add(a, b int) int {
 	return a + b
 }
 
 func doMath(a int, b int, operation func(a, b int) int) int {
 	return operation(a, b)
+}
+
+func main() {
+	fmt.Println(doMath(6, 1, add)) // 7
 }
 ```
 
@@ -475,7 +479,31 @@ func main() {
 }
 ```
 
-As shown above, this time around we need to pass the slice we have suffixed by `...`. In other words, behind the scenes `sumUp(slice...)` will be turned into `sumUp(1, 2, 3)`
+As shown above, this time around we need to pass the slice we have suffixed by `...`. In other words, behind the scenes `sumUp(slice...)` will be turned into `sumUp(1, 2, 3)`.  
+As default function params is not built into the Go language, we can use the variadic params to build such a functionality:
+
+```go
+package main
+
+import "fmt"
+
+func greet(name string, greeting ...string) string {
+	defaultGreeting := "Hi"
+	if len(greeting) > 0 {
+		defaultGreeting = greeting[0]
+	}
+
+	return defaultGreeting + " " + name
+
+}
+
+func main() {
+	fmt.Println(greet("John"))                 // Hi John
+	fmt.Println(greet("Jane", "Good morning")) // Good morning Jane
+}
+```
+
+Basically, the second param of the `greet` function is set, it will be used otherwise the default value of `Hi` will be used.
 
 ## An Intro to The `defer` Keyword
 
@@ -532,8 +560,7 @@ here is the last line
 foo
 ```
 
-One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done. For example, When you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources.  
-Deferred functions run in LIFO order. For example:
+One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done. For example, When you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources. We also need to know that deferred functions run in LIFO order. For example:
 
 ```go
 package main
@@ -557,7 +584,7 @@ The last deferred function has to print `1` to it is the first function that wil
 
 ## An Intro to Wrapper Functions is Go
 
-We can also create wrapper functions that accept another function and call it but before and after that function call, do some other operations. For example, in the following program we have created a wrapper function called `timer()` which calculated the total amount of time it takes to run its input function:
+We can also create wrapper functions that accept another function and call it but before and after that function call, do some other operations (It can be compared to the Decorator Design Pattern). For example, in the following program we have created a wrapper function called `timer()` which calculated the total amount of time it takes to run its input function:
 
 ```go
 package main
@@ -588,8 +615,6 @@ func timer(f func()) {
 }
 ```
 
-
-
 ## Inlining Decisions by Go Compiler
 
 Inlining in the context of Go (or any programming language) refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings.  
@@ -613,6 +638,7 @@ func main() {
 	fmt.Println("Result:", result)
 }
 ```
+
 When the compiler sees the `add` function being called inside the `main` function, it can choose to inline the `add` function. This means the `add` function's code will be directly placed inside the `main` function, instead of creating a separate execution context for it:
 
 ```go
@@ -624,4 +650,5 @@ func main() {
 	fmt.Println("Result:", result)
 }
 ```
+
 The addition operation `(x + y)` from the `add` function has been directly placed inside the `main` function, eliminating the need for a separate function call.

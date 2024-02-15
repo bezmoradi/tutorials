@@ -1,6 +1,6 @@
 # Go > Maps
 
-Map is a data structure in Go that can be be used to group some values together (In other programming languages it's called object, hash table, dictionary etc). Basically, it can be thought of as a struct but slightly different. To understand how powerful maps are, let's first create a slice of strings and see what limitations we have:
+Map is a data structure in Go that can be be used to group some values together (In other programming languages it's called object, hash table, dictionary etc). Basically, it can be thought of as a struct but slightly different. To understand how powerful maps are, let's first create a slice of strings and see what limitations we have while using that:
 
 ```go
 package main
@@ -19,7 +19,7 @@ func main() {
 }
 ```
 
-The problem with using a slice for storing some values like use cases of the Go language is that the slice does not give us a hint about what we are dealing with; in other words, if somebody has no idea what those values are about, they wound never figure it out. The other issue is that in order to get an element, we need to memorize its index which can be tricky. The map data structure can solve these issues:
+The problem with using a slice for storing some values like use cases of the Go language is that the slice does not give us a hint about what we are dealing with; in other words, if somebody has no idea what those values are about, they would never figure it out. The other issue is that in order to get an element, we need to memorize its index which can be tricky. The map data structure can solve these issues:
 
 ```go
 goUseCases := map[string]string{
@@ -32,7 +32,7 @@ fmt.Println(goUseCases["cli"]) // Go to create fast and elegant CLIs.
 ```
 
 Keep in mind that like slices, the trailing comma after the last key/value pair is mandatory otherwise you will get compile-time error.  
-The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value which in this case is also string. We can also initialized a map as empty then add elements to it:
+The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value which in this case is also string (As another example, if we need out values be of type a slice of strings, we can define our map as `map[string][]string`). We can also initialized a map as empty then add elements to it:
 
 ```go
 goUseCases := map[string]string{}
@@ -84,11 +84,11 @@ If we try to run the above code though, we will get the following error:
 panic: assignment to entry in nil map
 ```
 
-In Go, maps are **not** automatically initialized, so you need to create the map using make or using a composite literal before you can use it.
+In Go, maps are **not** automatically initialized, so you need to create the map using make or using a composite literal before you can use it. In other words, the above way of creating maps is completely wrong.
 
 ## How to Use the `make()` Function to Make Maps
 
-As with slices, we can use the `make()` function to make maps. Let's first see maps in action without it:
+As with slices, we can use the `make()` function to create maps. Let's first see maps in action without it:
 
 ```go
 goUseCases := map[string]string{
@@ -287,7 +287,7 @@ func main() {
 
 ## Exercise of Counting Words in A Phrase
 
--   The following program counts the number of repetition of words in a phrase using `map`:
+The following program counts the number of repetition of words in a phrase using `map`:
 
 ```go
 package main
@@ -297,20 +297,20 @@ import (
 	"strings"
 )
 
-func countWords(s string) wordsType {
-	slice := strings.Split(s, " ")
-	words := wordsType{}
+func countWords(s string) map[string]int {
+	words := strings.Split(s, " ")
+	result := map[string]int{}
 
-	for _, char := range slice {
-		char = strings.ToLower(char)
-		if wordCount, ok := words[char]; ok {
-			words[char] = wordCount + 1
+	for _, word := range words {
+		word = strings.ToLower(word)
+		if wordCount, ok := result[word]; ok {
+			result[word] = wordCount + 1
 		} else {
-			words[char] = 1
+			result[word] = 1
 		}
 	}
 
-	return words
+	return result
 }
 
 func main() {
@@ -322,6 +322,60 @@ In the output we have:
 
 ```text
 map[In:1 high:1 most:1 name:1 of:1 the:2]
+```
+
+Let's create a file called `main_test.go` and write some tests for the `countWords` function:
+
+```go
+package main
+
+import "testing"
+
+func TestCountWords(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  string
+		result map[string]int
+	}{
+		{
+			name:  "valid input",
+			input: "this is to test with unique words",
+			result: map[string]int{
+				"this":   1,
+				"is":     1,
+				"to":     1,
+				"test":   1,
+				"with":   1,
+				"unique": 1,
+				"words":  1,
+			},
+		},
+		{
+			name:  "input with both uppercase and lowercase words",
+			input: "word and Word and WORD and wORd are identical",
+			result: map[string]int{
+				"word":      4,
+				"and":       3,
+				"are":       1,
+				"identical": 1,
+			},
+		},
+		{
+			name:   "empty string",
+			input:  "",
+			result: map[string]int{"": 1},
+		},
+	}
+
+	for _, test := range tests {
+		result := countWords(test.input)
+		for key, expectedValue := range test.result {
+			if resultValue, ok := result[key]; !ok || expectedValue != resultValue {
+				t.Errorf("expected %v but received %v", test.result, result)
+			}
+		}
+	}
+}
 ```
 
 ## Maps vs. Structs
@@ -341,7 +395,7 @@ There are some main fundamental differences between maps and structs.
 -   We have pre-defined keys and we cannot dynamically add new key/values pairs
 -   Both keys and values can be of different types
 -   Struct is a value type
--   we cannot delete a key from a struct
+-   We cannot delete a key from a struct
 
 ## An Intro to `maps` Built-in Package
 

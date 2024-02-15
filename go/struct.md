@@ -46,7 +46,7 @@ func main() {
 }
 ```
 
-The main problem with the above way of creating variables off of a struct is that if down the road the **order** of keys inside the struct changes, we would faced unordered values:
+The main problem with the above way of creating variables off of a struct is that if down the road the **order** of keys inside the struct changes, we would faced unordered values (This rule applies as long as the type of the fields that we have changed their orders is the same otherwise we will get compile-time error):
 
 ```go
 type person struct {
@@ -140,6 +140,8 @@ The short-hand notation for the struct keys dereferencing is as:
 fmt.Println(user.firstName, user.lastName)
 ```
 
+This way the compiler will automatically do the dereferencing process for us.
+
 ## Default Values of Struct Keys
 
 Technically, the default value for keys in a struct without initial value is as follows:
@@ -156,7 +158,7 @@ Technically, the default value for keys in a struct without initial value is as 
 +-----------+-----------+
 ```
 
-The `Println` function does not show the default values; in order to show them, we need to use the `Printf` method as follows:
+The `Println` function does not show the fields; in order to show them, we need to use the `Printf` method as follows:
 
 ```go
 func main() {
@@ -165,8 +167,36 @@ func main() {
 }
 ```
 
+## Add Generic Types
+
+In Go, we can add generics to function; likewise, we can add generic types to structs as well:
+
+```go
+package main
+
+import "fmt"
+
+type person[T string | int] struct {
+	lastName  string
+	firstName string
+	metadata  T
+}
+
+func main() {
+	p := person[string]{
+		firstName: "John",
+		lastName:  "Doe",
+		metadata:  "this is a generic type",
+	}
+	fmt.Println(p)
+}
+```
+
+As shown above, type of the `metadata` can either be `string` or `int`.
+
 ## Nested Structs
-As there is not any class concept in Go, we can properly compare this feature of structs to OOP inheritance. To define nested structs we have:
+
+As there is not any class concept in Go, we can compare this feature of structs to OOP inheritance. To define nested structs we have:
 
 ```go
 package main
@@ -208,7 +238,7 @@ type person struct {
 }
 ```
 
-Like JavaScript ES6 short-hand notation, we can remove the key if both the key and struct have the same name. To understand it better, let's see the following example:
+Like JavaScript ES6 short-hand notation, we can remove the `contact` type if both the key and struct have the same name. To understand it better, let's see the following example:
 
 ```go
 package main
@@ -264,7 +294,7 @@ Instead of explicitly adding the nested type, we anonymously add that. From now 
 
 ## Receiver Functions
 
-We can also attach functions to structs and those functions can be called by variables of that type. Such a function is called Method:
+We can also attach functions to structs and those functions can be called by variables of that type. Such functions are called Method:
 
 ```go
 package main
@@ -290,7 +320,7 @@ func main() {
 }
 ```
 
-Basically what `(p person)` does is that `showUserData()` function can be called on any variable of type `person` (In OOP world, it's like defining a method in a class). We can also mutate data using struct methods. First, let's see an approach that does not work then we'll fix it:
+Basically `(p person)` makes it possible for the `showUserData` function to be called on any variable of type `person` (In OOP world, it's like defining a method in a class). We can also mutate data using methods. First, let's see a non-working example then we'll fix it:
 
 ```go
 package main
@@ -321,7 +351,7 @@ func main() {
 }
 ```
 
-Although we are calling `p.updateName("Jane")` to update the name, `p.showUserData()` shows the initial value! By default, Go works in a **Pass by Value** approach meaning the `updateName()` function does not update the original struct but creates a copy with totally another location in memory. Here is the solution:
+Although we are calling `p.updateName("Jane")` to update the name, `p.showUserData` shows the initial value! By default, Go works in a **Pass by Value** approach meaning the `updateName` function does not update the original struct but creates a copy with totally another location in memory. Here is the solution:
 
 ```go
 package main
@@ -354,8 +384,8 @@ func main() {
 
 Now let's break it down line by line:
 
--   `&person{}` assigns the memory address to `p`  
--   `(p *person)` means we are working with the value that this memory address is referencing  
+-   `&person{}` assigns the memory address to `p`
+-   `(p *person)` means we are working with the value that this memory address is referencing
 
 The short-hand version is like so:
 
