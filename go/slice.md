@@ -107,6 +107,45 @@ numbers[3] = 10
 fmt.Println(numbers) // Prints [1 2 3 10]
 ```
 
+Now in order to write a test for an array, let's first refactor our code to move the array logic into its own function:
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func sum(numbers [4]int) int {
+	sum := 0
+	for _, number := range numbers {
+		sum += number
+	}
+
+	return sum
+}
+
+func main() {
+	numbers := [4]int{1, 2, 3, 4}
+	fmt.Println(sum(numbers))
+}
+```
+We have a `sum` function which received an array of integers as input param and return the sum of all values. To test the `sum` function, let's create a test file called `main_test.go` as follows:
+
+```go
+package main
+
+import "testing"
+
+func TestSum(t *testing.T) {
+	got := sum([4]int{1, 2, 3, 4})
+	want := 10
+	if got != want {
+		t.Errorf("expected %v but received %v", want, got)
+	}
+}
+```
+
 ## Slice
 
 The only difference between creating an array and a slice is that we need to omit the hard-coded length:
@@ -215,7 +254,8 @@ copy(slice, numbers)
 fmt.Println(slice)
 ```
 
-`slice` is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the target variable (`numbers`) into the destination (`slice`)
+`slice` is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the target variable (`numbers`) into the destination (`slice`).  
+
 
 ### An Intro to `len()` and `cap()` Built-in Functions
 

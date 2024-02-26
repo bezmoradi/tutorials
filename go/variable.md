@@ -19,7 +19,6 @@ Large ecosystem of partners, communities, and tools`
 
 	fmt.Println(whatIsGo)
 }
-
 ```
 
 In the output we'll have:
@@ -403,8 +402,7 @@ func TestPrompt(t *testing.T) {
 	}
 }
 ```
+
 ### What Does `os.Pipe` Function Do?
+
 The `Pipe` function creates a communication mechanism that allows one process to send data to another process. In the above example, it's used for capturing the output of a function, as you're doing in your test. It returns two `*os.File` values, one for the read end (`r`) and one for the write end (`w`) of the pipe.
-
-
-

@@ -32,7 +32,7 @@ fmt.Println(goUseCases["cli"]) // Go to create fast and elegant CLIs.
 ```
 
 Keep in mind that like slices, the trailing comma after the last key/value pair is mandatory otherwise you will get compile-time error.  
-The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value which in this case is also string (As another example, if we need out values be of type a slice of strings, we can define our map as `map[string][]string`). We can also initialized a map as empty then add elements to it:
+The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value which in this case is also string (As another example, if we need our values to be of type a slice of strings, we can define our map as `map[string][]string`). We can also initialized a map as empty then add elements to it:
 
 ```go
 goUseCases := map[string]string{}
@@ -68,7 +68,7 @@ goUseCases["web"] = "Updated value fo the 'web' key"
 fmt.Println(goUseCases["web"]) // Updated value fo the 'web' key
 ```
 
-Creating maps using the `var` keyword is like this:
+You might guess creating maps using the `var` keyword is like this:
 
 ```go
 var goUseCases map[string]string
@@ -178,6 +178,44 @@ goUseCases["cloud"] = "It's easier than ever to build cloud services with Go."
 goUseCases["cli"] = "Go to create fast and elegant CLIs."
 goUseCases["web"] = "Go powers fast and scalable web applications."
 goUseCases["devops"] = "Go is built to support both DevOps and SRE"
+```
+
+As with `struct` types, we can add methods to custom maps as follows:
+
+```go
+package main
+
+type golangUseCases map[string]string
+
+func (g golangUseCases) add(key, value string) {
+	g[key] = value
+}
+
+func main() {
+	goUseCases := make(golangUseCases)
+	goUseCases.add("cloud", "It's easier than ever to build cloud services with Go.")
+	goUseCases.add("cli", "Go to create fast and elegant CLIs.")
+	goUseCases.add("web", "Go powers fast and scalable web applications.")
+	goUseCases.add("devops", "Go is built to support both DevOps and SRE")
+}
+```
+
+Now it's time to write a function for the above newly-created method:
+
+```go
+package main
+
+import "testing"
+
+func TestAdd(t *testing.T) {
+	key := "cli"
+	value := "Go to create fast and elegant CLIs."
+	goUseCases := golangUseCases{}
+	goUseCases.add(key, value)
+	if goUseCases[key] != value {
+		t.Errorf("expected %v but got %v", value, goUseCases[key])
+	}
+}
 ```
 
 ## Comma OK Idiom with Maps
@@ -387,14 +425,14 @@ There are some main fundamental differences between maps and structs.
 -   Keys can be anything
 -   All keys & values must be of the same type
 -   We can iterate over all key/values pairs inside a map
--   A map is a reference type
+-   A map is a reference type by default
 -   We can add/remove properties to a map
 
 ### Structs:
 
 -   We have pre-defined keys and we cannot dynamically add new key/values pairs
 -   Both keys and values can be of different types
--   Struct is a value type
+-   Struct is a value type (A reference of it can also be passed around)
 -   We cannot delete a key from a struct
 
 ## An Intro to `maps` Built-in Package

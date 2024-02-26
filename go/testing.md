@@ -359,7 +359,7 @@ import "testing"
 
 func TestConcatTwoStrings(t *testing.T) {
 	result := concatTwoStrings("Go", "lang")
-	assert(t, result, "Golangf")
+	assert(t, result, "Golang")
 }
 
 func assert(t *testing.T, got, want string) {

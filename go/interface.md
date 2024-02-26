@@ -42,20 +42,89 @@ func main() {
 In the above program we have a `payable` interface and as both `stripe` and `paypal` structs implement that interface by exposing the `pay` method, they can be considered as a `payable` type; that's why they can easily be added to the `payments` variable which is a slice of `paylable` type. We can refactor the above code as follows:
 
 ```go
-func doPayment(p payable) {
-	fmt.Println(p.pay())
+func doPayment(p payable) string {
+	return p.pay()
 }
 
 func main() {
 	stripe := stripe{name: "Stripe"}
-	doPayment(stripe)
-
 	paypal := paypal{name: "PayPal"}
-	doPayment(paypal)
+	payments := []payable{stripe, paypal}
+	for _, payment := range payments {
+		fmt.Println(doPayment(payment))
+	}
 }
 ```
 
-In the above program, the `doPayment(p payable)` function accepts any params that matches that interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `payable` interface; Go takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `payable` interface by having a `pay` method, we are good to go otherwise we'll get an error at compile time.
+In the above program, the `doPayment(p payable)` function accepts any params that matches that interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `payable` interface; Go takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `payable` interface by having a `pay` method, we are good to go otherwise we'll get an error at compile time.  
+Now let's add some tests:
+
+```go
+package main
+
+import "testing"
+
+func TestPayable(t *testing.T) {
+	assertPayment := func(t *testing.T, payable payable, want string) {
+		t.Helper()
+		got := payable.pay()
+		if got != want {
+			t.Errorf("expected %v but got %v", want, got)
+		}
+	}
+
+	t.Run("test stripe struct", func(t *testing.T) {
+		stripe := stripe{name: "Stripe"}
+		assertPayment(t, stripe, "Paid by Stripe")
+	})
+
+	t.Run("test paypal struct", func(t *testing.T) {
+		paypal := paypal{name: "PayPal"}
+		assertPayment(t, paypal, "Paid by PayPal")
+	})
+}
+```
+
+We can refactor the above test as below also:
+
+```go
+package main
+
+import "testing"
+
+func TestPayable(t *testing.T) {
+	assertPayment := func(t *testing.T, payable payable, want string) {
+		t.Helper()
+		got := payable.pay()
+		if got != want {
+			t.Errorf("expected %v but got %v", want, got)
+		}
+	}
+
+	tests := []struct {
+		name    string
+		payable payable
+		want    string
+	}{
+		{
+			name:    "Stripe",
+			payable: stripe{name: "Stripe"},
+			want:    "Paid by Stripe",
+		},
+		{
+			name:    "PayPal",
+			payable: paypal{name: "PayPal"},
+			want:    "Paid by PayPal",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			assertPayment(t, test.payable, test.want)
+		})
+	}
+}
+```
 
 ## Type Assertion
 

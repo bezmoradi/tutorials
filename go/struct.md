@@ -46,7 +46,7 @@ func main() {
 }
 ```
 
-The main problem with the above way of creating variables off of a struct is that if down the road the **order** of keys inside the struct changes, we would faced unordered values (This rule applies as long as the type of the fields that we have changed their orders is the same otherwise we will get compile-time error):
+The main problem with the above way of creating variables off of a struct is that if down the road the **order** of keys inside the struct changes, we would face unordered values (This rule applies as long as the type of the fields that we have changed their orders is the same otherwise we will get compile-time error):
 
 ```go
 type person struct {
@@ -64,7 +64,6 @@ func main() {
 So a safer way of creating a variable is as below because this way even if the order of struct fields changes, we won't get unexpected results:
 
 ```go
-
 type person struct {
 	lastName  string
 	firstName string
@@ -88,7 +87,7 @@ func main() {
 }
 ```
 
-As we can see in the output, we have `&{John Doe}` and the `&` shows that creating a variable using thew `new` keywords return a pointer (More on this later). We can also create a struct anonymously when we only need one instance of such struct:
+As we can see in the output, we have `&{John Doe}` and the `&` shows that creating a variable using the `new` keyword returns a pointer (More on this later). We can also create a struct anonymously when we only need one instance of such a struct:
 
 ```go
 package main
@@ -169,7 +168,7 @@ func main() {
 
 ## Add Generic Types
 
-In Go, we can add generics to function; likewise, we can add generic types to structs as well:
+In Go, we can add generics to functions; likewise, we can add generic types to structs as well:
 
 ```go
 package main
@@ -290,7 +289,7 @@ type adminUser struct {
 }
 ```
 
-Instead of explicitly adding the nested type, we anonymously add that. From now on, we can easily call `admin.printPersonData()`. Still we can call it like `admin.person.printPersonData()` as well.
+Instead of explicitly adding the nested type, we anonymously add that. From now on, we can easily call `admin.printPersonData()` (Still we can call it like `admin.person.printPersonData()` as well).
 
 ## Receiver Functions
 
@@ -372,7 +371,7 @@ func (p *person) updateName(newName string) {
 }
 
 func main() {
-	p := &person{
+	p := person{
 		firstName: "John",
 		lastName:  "Doe",
 	}
@@ -418,7 +417,23 @@ func main() {
 }
 ```
 
-In the above code we have removed the `&` while calling `person{}`. The code works fine because Go has a feature called "automatic referencing of methods" which simplifies working with pointers to objects. When you define a method with a receiver that is a pointer to a type (`*person` in this case), Go allows you to call that method on both the pointer to the object and the object itself. In this example, when you call `p.updateName("Jane")`, Go automatically interprets this as if you had called `(&p).updateName("Jane")`, knowing that `updateName` has a receiver of type `*person`. This is a convenience provided by Go to make code cleaner and more readable. So, whether you explicitly use the pointer or not, Go internally handles the conversion between the object and its pointer, allowing both versions to work correctly.
+In the above code we have removed the `&` while calling `person{}`. The code works fine because Go has a feature called "automatic referencing of methods" which simplifies working with pointers to objects; in other words, Go automatically takes the address of `p` when calling the method with a pointer receiver. When you define a method with a receiver that is a pointer to a type (`*person` in this case), Go allows you to call that method on both the pointer to the object and the object itself. In this example, when you call `p.updateName("Jane")`, Go automatically interprets this as if you had called `(&p).updateName("Jane")`, knowing that `updateName` has a receiver of type `*person`. This is a convenience provided by Go to make code cleaner and more readable. So, whether you explicitly use the pointer or not, Go internally handles the conversion between the object and its pointer, allowing both versions to work correctly.  
+Now it's time to write a test:
+
+```go
+package main
+
+import "testing"
+
+func TestUpdateName(t *testing.T) {
+	updatedName := "Jane"
+	p := person{firstName: "John", lastName: "Doe"}
+	p.updateName(updatedName)
+	if p.firstName != updatedName {
+		t.Errorf("expected %v but got %v", updatedName, p.firstName)
+	}
+}
+```
 
 ## Constructor Functions
 
@@ -437,6 +452,13 @@ type person struct {
 	lastName  string
 }
 
+func newPerson(fname, lname string) (person, error) {
+	if fname == "" || lname == "" {
+		return person{}, errors.New("either first name of last name is empty")
+	}
+	return person{firstName: fname, lastName: lname}, nil
+}
+
 func main() {
 	p, err := newPerson("John", "Doe")
 	if err != nil {
@@ -444,13 +466,6 @@ func main() {
 	}
 
 	fmt.Println(p)
-}
-
-func newPerson(fname, lname string) (person, error) {
-	if fname == "" || lname == "" {
-		return person{}, errors.New("either first name of last name is empty")
-	}
-	return person{firstName: fname, lastName: lname}, nil
 }
 ```
 
@@ -478,7 +493,7 @@ func New(fname, lname string) (Person, error) {
 }
 ```
 
-We have created a new folder in the root directory called `user` an as we need to have access to the struct and function in this package, we have changed the name of `person` to `Person` and `newPerson` to `New` (We could also use `NewPerson`, but in Go it is conventional to name constructor functions as `New`). In order to use our newly-created package in the `main` package we have:
+We have created a new folder in the root directory called `user` and as we need to have access to the struct and function in this package, we have changed the name of `person` to `Person` and `newPerson` to `New` (We could also use `NewPerson`, but in Go it is conventional to name constructor functions as `New`). In order to use our newly-created package in the `main` package we have:
 
 ```go
 package main
@@ -519,7 +534,7 @@ import (
 
 type Person struct {
 	FirstName string
-	FastName  string
+	LastName  string
 }
 
 func New(fname, lname string) (Person, error) {
@@ -527,7 +542,7 @@ func New(fname, lname string) (Person, error) {
 		return Person{}, errors.New("either first name of last name is empty")
 	}
 
-	return Person{FirstName: fname, FastName: lname}, nil
+	return Person{FirstName: fname, LastName: lname}, nil
 }
 ```
 
@@ -541,6 +556,53 @@ func main() {
 ```
 
 So this rule specifies whether the fields of a struct can be public to the outside world or not.
+Now it's time to write some tests for our package:
+
+```go
+package user
+
+import "testing"
+
+func TestNewPerson(t *testing.T) {
+	tests := []struct {
+		name         string
+		firstName    string
+		lastName     string
+		result       Person
+		errorMessage string
+	}{
+		{
+			name:         "valid input",
+			firstName:    "John",
+			lastName:     "Doe",
+			result:       Person{FirstName: "John", LastName: "Doe"},
+			errorMessage: "",
+		},
+		{
+			name:         "empty FirstName",
+			lastName:     "Doe",
+			errorMessage: "either first name of last name is empty",
+		},
+		{
+			name:         "empty LastName",
+			firstName:    "John",
+			errorMessage: "either first name of last name is empty",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			p, err := New(test.firstName, test.lastName)
+			if err != nil && err.Error() != test.errorMessage {
+				t.Errorf("expected %v but got %v", test.errorMessage, err.Error())
+			}
+			if p != test.result {
+				t.Errorf("expected %v but got %v", test.result, p)
+			}
+		})
+	}
+}
+```
 
 ## Struct Tags
 
@@ -608,6 +670,8 @@ func main() {
 }
 ```
 
+Keep in mind that before the `omitempty` keyword there should not be any white space.
+
 ## An Intro to Struct Validation
 
 If we need to define a struct key as required, we can use a tag as follows:
@@ -639,7 +703,7 @@ func main() {
 
 It outputs:
 
-```go
+```text
 Key: 'person.FirstName' Error:Field validation for 'FirstName' failed on the 'required' tag
 Key: 'person.LastName' Error:Field validation for 'LastName' failed on the 'required' tag
 ```
