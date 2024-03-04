@@ -33,7 +33,7 @@ func Add(a, b int) int {
 ```
 
 `// Package summary` is the summary of the package which usually is a short description. If we need to have a longer description as our main description of the package, we have to add `//` on a new line then add our main description.  
-An important note on Godoc is that there should not be an empty line between the comment and what we are commenting on; in other words, the following snipper would not produce any Godoc simply because there is an empty line between the statements and comments:
+An important note on Godoc is that there should not be an empty line between the comment and what we are commenting on; in other words, the following snippet would not produce any Godoc simply because there is an empty line between the statements and comments:
 
 ```go
 // Package summary
@@ -54,8 +54,7 @@ Basically, `:1234` refers to any open port on localhost. For example, if `1234` 
 
 ## Examples
 
-Alongside test suites, we can also add examples to `_test.go` files. The good thing about examples is that they are added to the project documentation to show other devs how a piece of code is used plus they are executed like normal tests so you can be confident they reflect what the code actually does (Unlike examples that can be found outside the codebase such as a readme file which often become out of date and incorrect compared to the actual code because they don't get checked).
-
+Alongside test suites, we can also add examples to `_test.go` files. The good thing about examples is that they are added to the project documentation to show other devs how a piece of code is used plus they are executed like normal tests so you can be confident they reflect what the code actually does (Unlike examples that can be found outside the codebase such as a readme file which often become out of date and incorrect compared to the actual code because they don't get checked).  
 Unlike normal test functions, though, example functions take no arguments and begin with the word `Example` instead of `Test`. To do that, we need to create a new file called `helpers_test.go` including the following logic:
 
 ```go
@@ -106,7 +105,7 @@ Example (Second)
 Example (Third)
 ```
 
-Sometimes we need more than just a function to write a good example. In situations like this, we need to add only one example function inside out test file:
+Sometimes we need more than just a function to write a good example. In situations like this, we need to add only one example function inside our test file:
 
 ```go
 package helpers

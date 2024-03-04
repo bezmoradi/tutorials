@@ -34,8 +34,8 @@ func main() {
 }
 ```
 
-By add a pair of curly braces (`{}`), we can define a block inside another block and any variable defined inside that internal block is scoped only to that block and as shown in the above snippet, if we try to access `name` outside its block, we'll get `undefined: name` error.  
-A different form of block-level scope involves defining a variable within the scope of an `if` statement. As illustrated below, the variable `z` can only be accessed within the confines of the `if` block:
+By adding a pair of curly braces (`{}`), we can define a block inside another block and any variable defined inside that internal block is scoped only to that block and as shown in the above snippet, if we try to access `name` outside its block, we'll get `undefined: name` error.  
+A different form of block-level scope involves defining a variable within the scope of an `if` statement. As illustrated below, the variable `n` can only be accessed within the confines of the `if` block:
 
 ```go
 package main
@@ -43,14 +43,14 @@ package main
 import "fmt"
 
 func main() {
-	if z := 10; z >= 10 {
-		fmt.Println(z)
+	if n := 10; n >= 10 {
+		fmt.Println(n)
 	}
-	fmt.Println(z) // undefined: z
+	fmt.Println(n) // undefined: n
 }
 ```
 
-If we try to compile our program, we'll get `undefined: z` simply because `z` isn't accessible outside the `if` statement.  
+If we try to compile our program, we'll get `undefined: n` simply because `n` isn't accessible outside the `if` statement.  
 As functions are first-class citizens in Go, we can simply assign them to variables. In the following example, we have defined a function called `doSomething` inside the `main` function that is **only** accessible inside `main` and if we try to access is outside its scope, we will get `undefined: doSomething` error:
 
 ```go
@@ -92,8 +92,8 @@ func anotherFunction() {
 }
 ```
 
-In the above program, we have the `name` variable at package-level; that's why it's accessible from any other part of that package (It's not accessible from other packages though).   
-Let's analyze what's happening when the `main` function is run. The Go compiler fist checks the block-level scope of the `main` function to see whether it finds any variable called `name` or not which in this case there isn't any. Then it goes one level up and starts looking for the `name` variable at package-level and finds it. Now let's see what would happen if we have variables with identical names in different scopes:
+In the above program, we have the `name` variable at package-level; that's why it's accessible from any other part of that package (It's not accessible from other packages though).  
+Let's analyze what's happening when the `main` function is run. The Go compiler fist checks the block-level scope of the `main` function to see whether it finds any variable called `name` or not which in this case it doesn't find any. Then it goes one level up and starts looking for the `name` variable at package-level and finally it finds it. Now let's see what would happen if we have variables with identical names in different scopes:
 
 ```go
 package main
@@ -108,7 +108,7 @@ func main() {
 }
 ```
 
-When we have a variable with the same name as in the package scope, it's called Variable Shadowing. As shown above, we have defined two variables with identical names but different scopes meaning the `name` variable which is defined in package-level scope is both accessible in functions within that package and all other files that belong to the `main` package. In the above program, the `fmt.Println` function first checks the function scope for a variable called `name`; if found, it would use that otherwise if would look for it at the package scope. Let's change the `main` function as follows:
+When we have a variable with the same name as in the package scope, it's called **Variable Shadowing**. As shown above, we have defined two variables with identical names but different scopes; meaning the `name` variable which is defined at the package-level scope is both accessible in functions within that package and all other files that belong to the `main` package. In the above program, the `fmt.Println` function first checks the function scope for a variable called `name`; if found, it would use it otherwise if would look for it at the package scope. Let's change the `main` function as follows:
 
 ```go
 package main
@@ -123,7 +123,7 @@ func main() {
 ```
 
 In the above case, the `Println` function first checks its surrounding scope which is the `main` function and as it does not find any `name` variable in that scope, it continues to the package scope and finally finds a variable named `name`.  
-As mentioned earlier, variables defined within the package-level scope are accessible within that package, which implies they are also accessible in other files as long as those files belong to the same package:
+As mentioned earlier, variables defined within the package-level scope are accessible within that package, which implies that they are also accessible in other files as long as those files belong to the same package:
 
 ```go
 // helper.go
@@ -144,7 +144,7 @@ func main() {
 }
 ```
 
-Consider that when our code is distributed across multiple files, it is necessary to specify all the file names in the following manner in order to run our program:
+When our code is distributed across multiple files, it is necessary to specify all the file names in the following manner in order to run our program:
 
 ```text
 $ go run main.go helper.go
@@ -156,9 +156,15 @@ It's clear that enumerating all file names, especially with a large number of fi
 $ go run .
 ```
 
+As another workaround, we can use a wildcard as follows:
+
+```text
+$ go run *.go
+```
+
 ## App-level Scope
 
-In Go, we have the option to access elements from other packages; let's call this feature app-level scope. To see this feature in action, let's first see the project folder structure:
+In Go, we have the option to access elements from other packages; let's call this feature app-level scope. To see this feature in action, let's first see the folder structure of our project:
 
 ```text
 .

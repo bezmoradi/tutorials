@@ -1,6 +1,6 @@
 # Go > Error Handling
 
-Go designers believe that coupling exceptions to a control structure, as in the try-catch-finally idiom, results in convoluted code. It also tends to encourage programmers to label too many ordinary errors, such as failing to open a file, as exceptional which in reality it isn't. In Go, the `error` interface defines what can be considered as an `error` type.
+Go designers believe that coupling exceptions to a control structure, as in the try-catch-finally idiom, results in convoluted code. It also tends to encourage programmers to label too many ordinary errors, such as failing to open a file, as exceptional which in reality it isn't. In Go, the following `error` interface defines what can be considered as an `error` type:
 
 ```go
 type error interface {
@@ -8,17 +8,17 @@ type error interface {
 }
 ```
 
-In other words, any type that has an `Error` method attached to it is considered an an `error` in Go.
+In other words, any type that has an `Error` method attached to it is considered as an `error` in Go.
 
 ## An Intro to The `errors` Package
 
-In Go, the `https://pkg.go.dev/errors` package can be used for creating custom errors using the `New` function.
+In Go, the `https://pkg.go.dev/errors` package can be used for creating custom errors using the `New` function:
 
 ```go
 func New(text string) error
 ```
 
-As shown above, this function receives a string as an input and returns an `error` type. If we take a peek at the source of the `New` function, we have:
+As shown above, this function receives a string as an input and returns an `error`. If we take a peek at the source of the `New` function, we have:
 
 ```go
 func New(text string) error {
@@ -34,7 +34,7 @@ func (e *errorString) Error() string {
 }
 ```
 
-What `New` function does is that it creates a variable of type `errorString` and pass its input param as its `s` field. For the `errorString` type to be of type `error` interface, it must have an `Error` method which returns a string.
+What the `New` function does is that it creates a variable of type `errorString` and pass its input param as its `s` field. For the `errorString` type to be of type `error` interface, it needs to have an `Error` method which returns a string.
 
 ## Introduction to The `log` Package
 
@@ -53,6 +53,7 @@ func main() {
 	log.Print(err) // 2024/01/08 18:40:38 this is a custom-made error
 }
 ```
+
 The `fmt` package formats an error value by calling its `Error` method. One other difference is that with the `log` package we can define **where** the log needs to go:
 
 ```go
@@ -70,9 +71,7 @@ func main() {
 		fmt.Println(err)
 	}
 	defer f.Close()
-
 	log.SetOutput(f)
-
 	_, err = os.Open("NON_EXISTING_FILE")
 	if err != nil {
 		log.Println(err)
@@ -84,7 +83,7 @@ In this program, first we create a brand-new file called `logs.txt` then by call
 
 ## Difference between `Exit` and `Panic`
 
-The `log.Fatal` function calls `os.Exit(1)` and the program terminates immediately while deferred functions are not run.
+The `log.Fatal` function calls `os.Exit(1)` and the program terminates immediately while deferred functions are not run:
 
 ```go
 package main
@@ -120,6 +119,8 @@ import (
 )
 
 func main() {
+	defer neverRuns()
+
 	_, err := os.Open("NON_EXISTING_FILE")
 	if err != nil {
 		fmt.Print(err)
@@ -128,7 +129,7 @@ func main() {
 }
 ```
 
-Simply put, `log.Panic` function implies that there is an issue but sill we have a chance to recover our program from terminating:
+Whereas the `log.Panic` function implies that there is an issue but sill we have a chance to recover our program from terminating:
 
 ```go
 package main
@@ -166,7 +167,7 @@ func main() {
 }
 ```
 
-The `recover` function is built-in into Go that regains the control of a panicking goroutine which is only useful inside deferred functions. In that case, calling `recover` will capture the value given to the `panic` function and resume the normal execution. In Go, `panic` and `recover` are used to manage unexpected situations in your code, especially during runtime errors.
+The `recover` function is built-in into Go that regains the control of a panicking goroutine which is only useful inside deferred functions. In that case, calling `recover` will capture the value given to the `panic` function and resume the normal execution. In Go, `panic` and `recover` are used to manage unexpected situations in your code, especially during runtime errors:
 
 ```go
 package main
@@ -194,11 +195,11 @@ func main() {
 }
 ```
 
-`recover` is another built-in function used to regain control after a panic. It is typically used in a deferred function to capture the panic value and resume normal execution. The recover function returns the value that was passed to panic. If there is no panic or if `recover` is called outside the deferred function or after the panic has propagated outside that function, it returns `nil`.
+The `recover` function returns the value that was passed to the `panic`. If there is no `panic` or if `recover` is called outside the deferred function or after the panic has propagated outside that function, it returns `nil`.
 
 ## Create Custom Errors
 
-We can create custom errors as long as they adhere to the `error` interface.
+We can create custom errors as long as they adhere to the `error` interface:
 
 ```go
 package main
@@ -214,7 +215,7 @@ func main() {
 }
 ```
 
-Let's create a factory functions for creating errors:
+Let's create a factory function for creating errors:
 
 ```go
 package main
@@ -272,4 +273,4 @@ func main() {
 }
 ```
 
-Technically, as the `customError` struct has a function called `Error`, if can be considered as an `error` type; so it can be easily used as an input param for the `errorGenerator` function.
+Technically, as the `customError` struct has a function called `Error`, it can be considered as an `error` type; so it can be easily used as an input param for the `errorGenerator` function.

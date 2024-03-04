@@ -20,7 +20,14 @@ func main() {
 }
 ```
 
-The `HandleFunc` function sets up a handler function for a specific URL pattern (`/` in this case). When a request is made to the root path (`/`), the provided handler function is executed. The handler function takes two arguments: `w` is a `ResponseWriter` that allows you to construct an HTTP response, and `r` is an `Request` that contains information about the incoming request.
+The `HandleFunc` function sets up a handler function for a specific URL pattern (`/` in this case). When a request is made to the root path (`/`), the provided handler function is executed. The handler function takes two arguments: `w` is a `ResponseWriter` that allows you to construct an HTTP response, and `r` is a `Request` that contains information about the incoming request.  
+By visiting `http://localhost:8080` we can see that `Hello World` is printed on screen. We can also remove the port like so:
+
+```go
+http.ListenAndServe("", nil)
+```
+
+This way, in order to see the web page, we have to go to the `http://localhost` URL.
 
 ## Why Is `Request` A Pointer?
 
@@ -119,7 +126,7 @@ func main() {
 }
 ```
 
-We are using `client.Get` method to directly make a GET request. In this case, the `http.Client` automatically creates an HTTP GET request and sends it to the specified URL. This is a convenient way to make simple GET requests. The other way is follows:
+We are using `client.Get` method to directly make a GET request. In this case, the `http.Client` automatically creates an HTTP request of type GET and sends it to the specified URL. This is a convenient way to make simple GET requests. The other way is as follows:
 
 ```go
 func main() {

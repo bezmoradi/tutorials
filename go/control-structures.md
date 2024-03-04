@@ -16,7 +16,9 @@ func main() {
 		fmt.Println("It's Go")
 		fmt.Println(something)
 	} else if name == "Golang" {
+		somethingElse := "This is only accessible inside the else if block"
 		fmt.Println("It's Golang")
+		fmt.Println(somethingElse)
 	} else {
 		fmt.Println("!")
 	}
@@ -24,7 +26,7 @@ func main() {
 ```
 
 Unlike some other programming languages, Go does not require you to place any parenthesis around the `if` condition but if you do so, still it's valid code.  
-As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block.  
+As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block (By the same token, the variable `somethingElse` is only accessible within the `else if` block).  
 In Go, we have the option to place some statements in front of `if`. As an example, let's first see the normal version of writing conditional flow:
 
 ```go
@@ -234,7 +236,7 @@ func main() {
 }
 ```
 
-This Go code snippet defines a simple program using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10. We can also use `return` instead of `break`; the problem though is that `fmt.Println("The end")` wont' be run anymore that way. To fix that we have:
+In the above snippet a simple program is defined using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10. We can also use `return` instead of `break`; the problem though is that `fmt.Println("The end")` won't be run anymore that way. To fix that we have:
 
 ```go
 func main() {
@@ -250,7 +252,25 @@ func main() {
 }
 ```
 
-If we need to skip the rest of iteration commands and go for the next round, we can use the `continue` keyword.  
+If we need to skip the rest of iteration commands and go for the next round, we can use the `continue` keyword:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	for _, n := range nums {
+		if n%2 == 0 {
+			continue
+		}
+		fmt.Println(n)
+	}
+}
+```
+
+In the above program only odd numbers are printed.  
 We can use the `for` loop in order to iterate over arrays and slices:
 
 ```go

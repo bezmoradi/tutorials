@@ -6,7 +6,7 @@ Google created Go for three primary reasons:
 -   Efficient execution
 -   Ease of coding
 
-In Go, the `package main` declaration is a crucial part of creating executable programs. When you write a Go program, you organize your code into packages (A package is a collection of source files that work together to provide a set of functionalities). Each Go file starts with a `package` declaration, which defines the package to which the file belongs to. The `package main` is a special package in Go; it indicates that the Go file is the starting point of the executable program. When you create a Go executable, it must have a `package main` declaration in the file that contains the `func main()`. The `func main()` serves as the entry point of the program, where execution begins when you run the compiled executable.  
+In Go, the `package main` declaration is a crucial part of creating executable programs. When you write a Go program, you organize your code into packages (A package is a collection of source files that work together to provide a set of functionalities). Each Go file starts with a `package` declaration, which defines the package to which the file belongs to. The `package main` is a special package in Go; it indicates that the Go file is the starting point of the executable program. When you create a Go executable, it must have a `package main` declaration in the file that contains the `main` function. This function serves as the entry point of the program, where execution begins when you run the compiled executable.  
 In the following program, `fmt` is one of built-in Go packages (Packages like `fmt` do not have a `func main()` just because they are not intended to be run as a program but instead used by other programs):
 
 ```go
@@ -67,14 +67,14 @@ The important note here is that for the `go build` command to run successfully, 
 
 ## Split Code into Multiple Files
 
-A set of files sharing the same package name form the implementation of a package. An implementation may require that all source files for a package inhabit the **same** directory. It means that if we need to export some functions of the `main` package, they must be in the same folder; in other words, in the root of the project. We can spread functions in different files:
+A set of files sharing the same package name form the implementation of a package. An implementation may require that all source files for a package inhabit the **same** directory. We can spread functions in different files:
 
 ```go
 // main.go
 package main
 
 func main() {
-	externalFunction()
+	aFunction()
 }
 ```
 
@@ -88,7 +88,7 @@ import (
 	"fmt"
 )
 
-func externalFunction() {
+func aFunction() {
 	fmt.Println("External function called")
 }
 ```
@@ -142,7 +142,18 @@ import "github.com/<username>/tutorial/utils"
 func main() {
 	utils.ExternalFunction()
 }
+```
 
+In case of naming conflicts with other packages or if we would like to name our package something other than the original name, we can use an alias as follows:
+
+```go
+package main
+
+import utilities "github.com/<username>/tutorial/utils"
+
+func main() {
+	utilities.ExternalFunction()
+}
 ```
 
 ## How to Use Third-party Packages
@@ -166,7 +177,7 @@ require github.com/Pallinder/go-randomdata v1.2.0 // indirect
 ```
 
 Also a new file called `go.sum` will be automatically added which stores references to third-party packages that we have installed.  
-Contrary to Node.js that has `node_modules`, in Go we do not have such a thing but the target package will be downloaded globally on your system. If we share our code, other devs we can download all packages that are used inside our module by running `go get`. Finally, we can use the package as follows:
+Contrary to Node.js that has `node_modules`, in Go we do not have such a thing but the target package will be downloaded globally on your system. If we share our code, other devs can download all packages that are used inside our module by running `go get`. Finally, we can use the package as follows:
 
 ```go
 package main
@@ -214,17 +225,3 @@ GOROOT='/usr/local/go'
 ```
 
 `GOROOT` is where the main Go binary is installed on our local machine and `GOPATH` is where the packages we download using the `go get` command are located.
-
-## Alias
-
-In case of naming conflicts with other packages or if we would like to name our package something other than the original name, we can use an alias as follows:
-
-```go
-package main
-
-import utilities "tutorials/utils"
-
-func main() {
-	utilities.ExternalFunction()
-}
-```
