@@ -262,12 +262,12 @@ memory address of nameParam is 0x1400008e050
 value of nameParam after update is Golang
 ```
 
-Simply we can see that the memory address of `name` is different from the memory address of `nameParam`. With this behavior in mind, we come to realize that each frame is totally separated from other frames which results in immutability; meaning that a function cannot mutate data receiving from other functions which in most cases is a good practice. Now we are going to analyze what would happen if we send the memory address of the `name` variable to the other function (Memory address, pointer, and reference all signify the same concept in this context).
+Simply we can see that the memory address of `name` is different from the memory address of `nameParam`. With this behavior in mind, we come to realize that each frame is totally separated from other frames which results in immutability; meaning that a function cannot mutate data receiving from other functions which in most cases is a good practice. Now we are going to analyze what would happen if we send the memory address of the `name` variable to the other function (Memory address, pointer, and reference all signify the same concept in this context):
 
 ```go
 func updateName(nameParam *string) {
 	*nameParam = "Golang"
-	fmt.Printf("memory address of nameParam is %v\n", &nameParam)
+	fmt.Printf("memory address of nameParam is %v\n", nameParam)
 }
 
 func main() {
@@ -280,8 +280,8 @@ func main() {
 Now in the output we have:
 
 ```text
-memory address of name is 0x14000102020
-memory address of nameParam is 0x14000116010
+memory address of name is 0x1400116010
+memory address of nameParam is 0x1400116010
 ```
 
 It means that inside the `updateName` function we are not creating a brand-new variable holding the value of `Go` anymore; instead we are passing the memory address of the `name` variable we created inside the `main` function.
@@ -329,7 +329,7 @@ func main() {
 }
 ```
 
-In the above program, we are passing a reference of the `name` variable to the `updateName` function. The problem here is that after `updateName` is finished, it will be removed automatically from stack; so the `main()` function will be left in the void! After analyzing the code, Go compiler realizes that it should fix the issue. When this function is done, Go uses what's called [Escape Analysis](#what-is-escape-analysis). If the compiler determines that a function returns a memory address OR the function receives a memory address as its input params (This is our case in the above example), it typically allocates memory for it on the heap rather than the stack.
+In the above program, we are passing a reference of the `name` variable to the `updateName` function. The problem here is that after `updateName` is finished, it will be removed automatically from stack; so the `main()` function will be left in the void! After analyzing the code, the compiler realizes that it should fix the issue. When this function is done, Go uses what's called [Escape Analysis](#what-is-escape-analysis). If the compiler determines that a function returns a memory address OR the function receives a memory address as its input params (This is our case in the above example), it typically allocates memory for it on the heap rather than the stack.
 
 ```text
 +-----------------------+      +-----------------------+
@@ -365,7 +365,7 @@ Previously we said that the Go compiler decides to use heap in two scenarios:
 -   If a function receives a memory address as input
 -   Or if a function returns a memory address
 
-To see the second condition in action we have:
+We have already seen the first scenario; to see the second condition in action we have:
 
 ```go
 package main
@@ -381,13 +381,13 @@ func updateName(nameParam string) *string {
 
 func main() {
 	name := "Go"
-	updatec := updateName(name)
+	updated := updateName(name)
 
-	fmt.Println(*updatec)
+	fmt.Println(*updated)
 }
 ```
 
-We can see that the `updateName` function returns a reference type of `string`; meaning there might be other parts of the program that are interested in that value. That's why the Go compiler will use heap. But we are doing this in the cost of heap allocation; in other words, there needs to be an overhead for the garbage collector to clean up that bucket in the heap when the whole operations is done (We need to keep in mind that if we place lots of things in the heap, it will cause low performance just because the garbage collector constantly needs to analyze them to delete them if not used anymore).
+We can see that the `updateName` function returns a reference type of `string`; meaning there might be other parts of the program that are interested in that value; that's why the compiler will use heap. But we are doing this in the cost of heap allocation; in other words, there needs to be an overhead for the garbage collector to clean up that bucket in the heap when the whole operations is done (We need to keep in mind that if we place lots of things in the heap, it will cause low performance just because the garbage collector constantly needs to analyze them to delete them if not used anymore).
 
 ## When Should We Use Value/Pointer Semantics?
 
@@ -509,9 +509,9 @@ fmt.Println(pointer) // Prints <nil>
 
 The Go compiler makes use of **Escape Analysis**, a optimization technique, to better handle memory allocation and management. An object’s lifetime is examined in order to ascertain whether or not it can be safely allocated on the stack rather than the heap, which is the central idea behind escape analysis. Allocating an object on the stack is preferable to allocating it on the heap because the stack is a more efficient data structure.
 The Go compiler takes care of doing the escape analysis for you automatically. If a function’s variables or data structures are being accessed outside of the function’s scope, the algorithm performing the escape analysis will flag it. A variable is said to have **escaped** when it is used outside of the function in which it was defined. In this case, the compiler will allocate it on the heap.  
-When a function returns a memory address, that value is typically moved to the heap. This is because in the heap, values can persist beyond the lifespan of a function.  
+When a function returns a memory address, that value is typically moved to the heap. This is because values in the heap can persist beyond the lifespan of a function.  
 In Go, when a function receives a value (not a pointer), it gets its own copy of that value and that copy is placed on the stack memory. On the other hand, when a function receives a pointer or returns the address of a local variable within the scope of that function, it gives the compiler a hint that this value could be shared across multiple goroutines (threads) or could persist after the functions is done and to make sure that the data will remain available, the Go compiler must allocate it on the heap.
-When possible, the Go compiler will allocate variables that are local to a function in that function's stack frame. However, if the compiler cannot prove that the variable is not referenced after the function returns, the the compiler must allocate the variable on the heap to avoid null pointer errors. Long story short, it's up to the compiler to decided whether to place a variable on stack or heap based on the results of escape analysis; in other words, there might be some occasions where we are passing a pointer to a function, but still that whole thing is stored on stack!
+When possible, the Go compiler will allocate variables that are local to a function in that function's stack frame. However, if the compiler cannot prove that the variable is not referenced after the function returns, the the compiler must allocate the variable on the heap to avoid null pointer errors. Long story short, it's up to the compiler to decide whether to place a variable on stack or heap based on the results of escape analysis; in other words, there might be some occasions where we are passing a pointer to a function, but still that whole thing is stored on stack!
 
 ```go
 package main
@@ -575,7 +575,7 @@ func main() {
 }
 ```
 
-We can see that the `numbers` slice is mutated. The same is true with Maps in Go.
+We can see that the `numbers` slice is mutated. The same is true with maps in Go:
 
 ```go
 package main

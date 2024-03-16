@@ -1,7 +1,7 @@
 # Go > Interface
 
 In Go, interfaces serve as blueprints that describe the expected behaviors of types. Much like the saying "If it walks like a duck and it quacks like a duck, then it must be a duck", if a type adheres to the methods specified by an interface, it is treated as if it implements that interface (For more information, refer to [Duck typing](https://en.wikipedia.org/wiki/Duck_typing)).  
-Technically, we don't need to manually link a struct with an interface because Go handles the matching process automatically. If the type exhibits the required behaviors, it's effectively a 'duck' in the context of that interface and Go seamlessly recognizes and utilizes it.
+Technically, we don't need to manually link a struct with an interface because Go handles the matching process automatically. If the type exhibits the required behaviors, it's effectively a 'duck' in the context of that interface and the compiler seamlessly recognizes and utilizes it.
 
 ```go
 package main
@@ -56,8 +56,7 @@ func main() {
 }
 ```
 
-In the above program, the `doPayment(p payable)` function accepts any params that matches that interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `payable` interface; Go takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `payable` interface by having a `pay` method, we are good to go otherwise we'll get an error at compile time.  
-Now let's add some tests:
+In the above program, the `doPayment(p payable)` function accepts any params that matches that interface. Basically, there is no **direct** link between `stripe` and `paypal` structs and the `payable` interface; the compiler takes care of it when we call `doPayment()` with each of them. If they follow the rules of the `payable` interface by having a `pay` method, we are good to go otherwise we'll get an error at compile time. Now let's add some tests:
 
 ```go
 package main
@@ -276,7 +275,7 @@ func main() {
 
 ## How to Explicitly Assign A Concrete Type to An Abstract Type
 
-In the following program we have an interface called `payable` which can be considered as an **Abstract type** and also a struct called `stripe` which is considered as a **Concrete Type**. By assigning a concrete type to an abstract one, we ask Go to check if the concrete variable **has** all properties of the interface; in other words, as long as the `stripe` struct has the `pay` method, the compiler is OK with that:
+In the following program we have an interface called `payable` which can be considered as an **Abstract type** and also a struct called `stripe` which is considered as a **Concrete Type**. By assigning a concrete type to an abstract one, we ask the compiler to check if the concrete variable **has** all properties of the interface; in other words, as long as the `stripe` struct has the `pay` method, the compiler is OK with that:
 
 ```go
 package main
@@ -303,7 +302,7 @@ func main() {
 }
 ```
 
-## Let's mimic How Interface in Go Can Be Useful while Dealing With Different DBs
+## How to Integrate Different DBs Using Interfaces
 
 In the following example, the `DB` interface helps us add a layer of abstraction to work with different databases:
 
@@ -349,11 +348,11 @@ func (m postgres) retrieve(id int) userModel {
 	return m.data[id]
 }
 
-func setter(db DB, u userModel) {
+func save(db DB, u userModel) {
 	db.save(u)
 }
 
-func getter(db DB, id int) userModel {
+func retrieve(db DB, id int) userModel {
 	return db.retrieve(id)
 }
 
@@ -365,14 +364,14 @@ func main() {
 	mongodb := mongodb{name: "MongoDB", data: map[int]userModel{}}
 	postgres := postgres{name: "Postgres", data: map[int]userModel{}}
 
-	setter(mongodb, u1)
-	setter(mongodb, u2)
-	setter(postgres, u3)
+	save(mongodb, u1)
+	save(mongodb, u2)
+	save(postgres, u3)
 
-	fmt.Println(getter(postgres, 3))
+	fmt.Println(retrieve(postgres, 3))
 }
 ```
 
-## How to User Interfaces with Generics?
+## How to Use Interfaces with Generics?
 
 One of the use cases of interfaces in Go is with generics. To know more about that, you can visit the **Generics** tutorial in this series.

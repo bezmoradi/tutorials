@@ -34,11 +34,11 @@ func (e *errorString) Error() string {
 }
 ```
 
-What the `New` function does is that it creates a variable of type `errorString` and pass its input param as its `s` field. For the `errorString` type to be of type `error` interface, it needs to have an `Error` method which returns a string.
+What the `New` function does is that it creates a variable of type `errorString` and passes its input param as its `s` field. For the `errorString` type to be of type `error` interface, it needs to have an `Error` method which returns a string.
 
 ## Introduction to The `log` Package
 
-One of the differences between the `fmt.Println` function and `log.Println` is that the latter also prints the date and time.
+One of the differences between the `fmt.Println` function and `log.Println` is that the latter also prints the date and time:
 
 ```go
 package main

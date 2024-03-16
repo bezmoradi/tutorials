@@ -212,7 +212,7 @@ type myType interface {
 
 Basically it says include all value of type `string` and also all those values that have the underlying type of `string` as in `myStringType` case.
 
-## How to User Generics with Structs?
+## How to Use Generics with Structs?
 Here is how to do that:
 
 ```go

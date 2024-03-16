@@ -371,7 +371,7 @@ func (p *person) updateName(newName string) {
 }
 
 func main() {
-	p := person{
+	p := &person{
 		firstName: "John",
 		lastName:  "Doe",
 	}

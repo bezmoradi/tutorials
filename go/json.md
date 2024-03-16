@@ -56,7 +56,7 @@ It outputs:
 ```
 
 An important note while working with either `Marshal` or `Unmarshal` functions is that the initial letter of struct fields must be uppercase otherwise Go cannot figure it out.  
-The type of `byteSlice` variable is `[]uint8` and by taking a peek at `https://go.dev/ref/spec#Types`, we will see that `uint8` is `the set of all unsigned 8-bit integers (0 to 255)`. Technically, in order to see a human-readable format of a `uint8` type, we need to cast it to the `string` type; in other words, `string(byteSlice)` shows a string representation of any variable with the `uint8` type. Now let's create a file named `main_test.go` to add tests for our function:
+The type of `byteSlice` variable is `[]byte` and by taking a peek at `https://go.dev/ref/spec#Types`, we will see that it's an alias for `uint8` which is `the set of all unsigned 8-bit integers (0 to 255)`. Technically, in order to see a human-readable format of a `uint8` type (aka `byte`), we need to cast it to the `string` type; in other words, `string(byteSlice)` shows a string representation of any variable with the `uint8` type. Now let's create a file named `main_test.go` to add tests for our function:
 
 ```go
 package main
@@ -117,13 +117,13 @@ This is a table test to test different edge cases.
 
 ## How to Convert JSON to Struct
 
-In order to convert a JSON format to a Go struct, we need to use the `Unmarshal` function:
+In order to convert a JSON format to a struct, we need to use the `Unmarshal` function:
 
 ```go
 func Unmarshal(data []byte, v any) error
 ```
 
-This function receives input data of a slice of bytes (`[]byte`) as the first param and memory address of a struct as the second one. If this process results in any error, `Unmarshal` returns it. In the following snipper we have created a function called `jsonDecoder` which utilized the `Unmarshal` function:
+This function receives input data of a slice of bytes (`[]byte`) as the first param and memory address of a struct as the second one. If this process results in any error, `Unmarshal` returns it. In the following snippet, we have created a function called `jsonDecoder` which utilized the `Unmarshal` function:
 
 ```go
 package main
@@ -220,9 +220,8 @@ func TestJsonDecoder(t *testing.T) {
 
 ## When to Use `Encode` And `Decode` Functions
 
-So far we have seen that if we have a Go struct and want to convert it to JSON, we can simply use `Marshal` function or when we want to convert a JSON object back to a Go struct, we can use the `Unmarshal` function. Basically, the `Encode` and `Decode` can be also used for the same purposes respectively. The difference though is that they work with a stream of data.
-
-For example, the `Decode` method reads JSON input from an `io.Reader` (like a file, network stream, or string reader) and directly decodes it into a Go value. It's more low-level and provides streaming JSON decoding, which can be useful when dealing with large JSON documents that can't fit entirely in memory. It's often used when you need to continuously read JSON objects from a stream without loading the entire stream into memory at once. But `Unmarshal` function, on the other hand, takes a slice of bytes containing JSON data and populates a Go value. It's more high-level and simpler to use as it operates on a byte slice (usually read from an entire file or an HTTP response) and parses the entire JSON at once. It's generally used when you have the entire JSON payload in memory and want to parse it into a Go value.
+So far we have seen that if we have a struct and want to convert it to JSON, we can simply use `Marshal` function or when we want to convert a JSON object back to a struct, we can use the `Unmarshal` function. Basically, the `Encode` and `Decode` can be also used for the same purposes respectively. The difference though is that they work with a stream of data.  
+For example, the `Decode` method reads JSON input from an `io.Reader` (like a file, network stream, or string reader) and directly decodes it into a value. It's more low-level and provides streaming JSON decoding which can be useful when dealing with large JSON documents that can't fit entirely in memory. It's often used when you need to continuously read JSON objects from a stream without loading the entire stream into memory at once. But `Unmarshal` function, on the other hand, takes a slice of bytes containing JSON data and populates a struct. It's more high-level and simpler to use as it operates on a byte slice (usually read from an entire file or an HTTP response) and parses the entire JSON at once. It's generally used when you have the entire JSON payload in memory and want to parse it.
 In order to understand the inner working of `Encode` And `Decode` functions, we need to know a little bit about the `Writer` interface in Go (`https://pkg.go.dev/io#Writer`).
 
 ```go

@@ -159,7 +159,7 @@ func printIt(input any) {
 
 ## Functions as First-class Citizens in Go
 
-As in JavaScript, functions in Go are first-class citizens meaning they can be assigned to variables, passed as arguments to other functions, and returned as values from functions.
+As in JavaScript, functions in Go are first-class citizens meaning they can be assigned to variables, passed as arguments to other functions, and be returned as values from functions.
 
 ### Anonymous Functions
 
@@ -241,7 +241,7 @@ func main() {
 }
 ```
 
-Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that is must be a function which accepts two input params of type integers and returns an integer as well. Keep in mind that for function params, we can also remove the param names as follows:
+Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that it must be a function which accepts two input params of type integers and returns an integer as well. Keep in mind that for function params, we can also remove the param names as follows:
 
 ```go
 func doMath(a int, b int, operation func(int, int) int) int {
@@ -283,7 +283,7 @@ func main() {
 }
 ```
 
-The `transformNumbers()` function accepts two parameters: a slice of integers and a function which accepts an integer input param and returns an integer (`func(int) int`). We can extract the function type into its own custom type to make our code cleaner:
+The `transformNumbers()` function accepts two parameters: a slice of integers and a function which accepts an input param of type integer and returns an integer (`func(int) int`). We can extract the function type into its own custom type to make our code cleaner:
 
 ```go
 type transformerType func(int) int
@@ -424,17 +424,17 @@ func factorial(number int) int {
 As a diagram, the above function with input param of 5 works like this:
 
 ```text
-factorial(5) Our condition is falsy because 5 > 0                        24 * 5 = 120
-	factorial(4) Our condition is falsy because 4 > 0                     6 * 4 = 24
-		factorial(3) Our condition is falsy because 3 > 0                 2 * 3 = 6
-			factorial(2) Our condition is falsy because 2 > 0             1 * 2 = 2
-				factorial(1) Our condition is falsy because 1 > 0         1 * 1 = 1
-					factorial(0) Our condition is TRUTHY because 0 == 0   1
+factorial(5) falsy condition because 5 > 0                        24 * 5 = 120
+	factorial(4) falsy condition because 4 > 0                     6 * 4 = 24
+		factorial(3) falsy condition because 3 > 0                 2 * 3 = 6
+			factorial(2) falsy condition because 2 > 0             1 * 2 = 2
+				factorial(1) falsy condition because 1 > 0         1 * 1 = 1
+					factorial(0) TRUTHY condition because 0 == 0           1
 ```
 
 ## Variadic Functions
 
-The `...` operation in the following function collects the list of stand-alone values and merge them all into a slice for us
+The `...` operator in the following function collects a list of stand-alone values and merge them all into a slice for us:
 
 ```go
 package main
@@ -456,7 +456,7 @@ func sumUp(numbers ...int) int {
 }
 ```
 
-Such a function is called Variadic. Keep in mind the these functions can be called with zero arguments like `sumeUp()`. An another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of them into the `numbers ...int`
+Such a function is called Variadic. Keep in mind that these functions can be called with zero arguments like `sumeUp()`. As another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of then into the `numbers ...int`
 
 ```go
 func sumUp(first int, numbers ...int) int {
@@ -470,7 +470,7 @@ func sumUp(first int, numbers ...int) int {
 }
 ```
 
-In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored into the `numbers` slice. Now let's consider a scenario the we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we hove to do the opposite of the `...int` operation
+In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored inside the `numbers` slice. Now let's consider a scenario where we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we hove to do the opposite of the `...int` operation:
 
 ```go
 func main() {
@@ -507,7 +507,7 @@ Basically, the second param of the `greet` function is set, it will be used othe
 
 ## An Intro to The `defer` Keyword
 
-What `defer` keyword does is that is like telling the compiler to do something later, but before it finishes running the function which in this case is `main()`. When you use `defer`, it schedules a function to be executed just before the function, where defer was used in, finishes running:
+The `defer` tells the compiler to do something later but before it finishes running the surrounding function which in the following case is the `main()` function:
 
 ```go
 package main
@@ -560,7 +560,7 @@ here is the last line
 foo
 ```
 
-One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done. For example, When you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources. We also need to know that deferred functions run in LIFO order. For example:
+One of the main use cases of `defer` is to clean up resources. For example, when we open a file, connect to a database etc, we do not want to have those resources forever; instead we want resources to be removed when our current function is done. For example, when you repeatedly open files without closing them, you might eventually reach the limit of how many files can be open concurrently (which is often a limited number set by the operating system). When this limit is reached, attempting to open more files will fail, potentially causing your program to misbehave or crash due to the inability to access necessary resources. We also need to know that deferred functions run in LIFO order. For example:
 
 ```go
 package main
@@ -574,7 +574,7 @@ func main() {
 }
 ```
 
-The last deferred function has to print `1` to it is the first function that will be executed; that's why we have:
+The last deferred function which prints `1` is the first function that will be executed; that's why we have:
 
 ```text
 1

@@ -1,6 +1,5 @@
 # Go > Testing
-
-To write a test, create a new file ending in `_test.go`. First let's create a function called `concatTwoStrings` in `main.go` file:
+First let's create a function called `concatTwoStrings` in `main.go` file:
 
 ```go
 package main
@@ -128,7 +127,7 @@ func TestSubtract(t *testing.T) {
 }
 ```
 
-Writing integration tests is no different from unit tests; the only difference is that inside the main function, we are delegating part of the algorithm to another function and as long as we are not mocking that other function, we are writing an integration test
+Writing integration tests is no different from unit tests; the only difference is that we are delegating part of the algorithm to another function and as long as we are not mocking that other function, we are writing an integration test.
 
 ## Benchmarks
 
@@ -167,7 +166,7 @@ coverage: 50.0% of statements
 ok  	playground	0.169s
 ```
 
-As shown above, `50%` of our main code is covered using tests which is not ideal! Also we can output the result into a file then open that file inside the browser. To do that, by running the following command a new file called `output.txt` will be created:
+As shown above, `50%` of our code is covered using tests. Also we can output the result into a file then open that file inside the browser. To do that, a new file called `output.txt` will be created by running the following command:
 
 ```sh
 & go test -coverprofile output.txt
@@ -179,7 +178,7 @@ The `output.txt` file includes the coverage results. In order to load that file 
 & go tool cover -html=output.txt
 ```
 
-As soon as you hit enter, a new browser tab will be popped up showing the coverage results
+As soon as you hit enter, a new browser tab will be popped up showing the coverage results.
 
 ## Table Test
 

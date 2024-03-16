@@ -6,7 +6,7 @@ Go is a statically-typed language meaning the type of variables must be defined 
 var name string = "Go"
 ```
 
-To create a variable, we need to use the `var` keyword followed by the name of the variable followed by the type then an equal sign and finally the value. In the above example, the `string` type tells the Go compiler that this variable will always hold a string.
+To create a variable, we need to use the `var` keyword followed by the name of the variable followed by the type then an equal sign and finally the value. In the above example, the `string` type tells the compiler that this variable will **always** store a string.
 To define strings, we can only use double quotes or backticks (Single quotes are not allowed). Backticks can be handy if we need to add strings in multiple lines:
 
 ```go
@@ -91,19 +91,19 @@ Before digging any deeper, let's have a refresher on how computers work with 0s 
 +-------------+-------------+-------------------------+
 |   1 Light   |     2^1     |   Represents 2 things   |
 +-------------+-------------+-------------------------+
-|   2 Light   |     2^2     |   Represents 4 things   |
+|   2 Lights  |     2^2     |   Represents 4 things   |
 +-------------+-------------+-------------------------+
-|   3 Light   |     2^3     |   Represents 8 things   |
+|   3 Lights  |     2^3     |   Represents 8 things   |
 +-------------+-------------+-------------------------+
-|   4 Light   |     2^4     |  Represents 16 things   |
+|   4 Lights  |     2^4     |  Represents 16 things   |
 +-------------+-------------+-------------------------+
-|   5 Light   |     2^5     |  Represents 32 things   |
+|   5 Lights  |     2^5     |  Represents 32 things   |
 +-------------+-------------+-------------------------+
-|   6 Light   |     2^6     |  Represents 64 things   |
+|   6 Lights  |     2^6     |  Represents 64 things   |
 +-------------+-------------+-------------------------+
-|   7 Light   |     2^7     |  Represents 128 things  |
+|   7 Lights  |     2^7     |  Represents 128 things  |
 +-------------+-------------+-------------------------+
-|   8 Light   |     2^8     |  Represents 256 things  |
+|   8 Lights  |     2^8     |  Represents 256 things  |
 +-------------+-------------+-------------------------+
 ```
 
@@ -137,7 +137,7 @@ Some most-used types in go are as follows:
 -   `int`: Some examples are `0`, `-1`, and `100`
 -   `uint`: Unsigned integer meaning non-negative numbers like `0` and `10`
 -   `float64`: Some examples are `-10.01`, `0.0009`, and `10.001`
--   `[]byte`: Byte slice is a computer-friendly representation of strings. For example, the string `hi` will be shown in byte slice as `[104 105]`. To find the ascii value of different characters, visit https://www.asciitable.com
+-   `[]byte`: Byte slice is a computer-friendly representation of strings. For example, the string `hi` will be shown in byte slice as `[104 105]`. To find the ascii value of different characters, visit [ASCII Table](https://www.asciitable.com)
 
 In the following example, although the variable holds the value of `1000`, as the type is `float64`, it is treated a decimal by the compiler:
 
@@ -191,24 +191,8 @@ func main() {
 }
 ```
 
-In the above snippet, first we have converted the `anotherName` variable to `customString` then called the `logString` method on it. Now let's create an alias for the `int` type:
-
-```go
-package main
-
-import (
-	"fmt"
-)
-
-type intAlias int
-
-func main() {
-	var number intAlias = 7
-	fmt.Println(number) // 7
-}
-```
-
-In Go, you can convert the value of one type to another by using a type conversion expression. The syntax for a type conversion is `T(x)`, where `T` is the target type, and `x` is the value you want to convert. So, when you write `intAlias(7)`, you're using a type conversion to create a value of type `intAlias` from the int value `7`. As a more real-world example, let's consider the following program:
+In the above snippet, first we have converted the `anotherName` variable to `customString` then called the `logString` method on it.  
+In Go, you can convert the value of one type to another by using a type conversion expression. The syntax for a type conversion is `T(x)`, where `T` is the target type, and `x` is the value you want to convert. As a more real-world example, let's consider the following program:
 
 ```go
 package main
@@ -233,7 +217,7 @@ func convertToCentimeters(meterLength meter) centimeter {
 }
 ```
 
-In this example, we have two type aliases, `meter` and `centimeter`, both based on the `float64` type. The `convertToCentimeters` function takes a length in meters (of type `meter`) and converts it to centimeters (of type `centimeter`). This allows for clear and expressive function signatures, and it makes the code more self-documenting. Let's see another example:
+In this example, we have two type aliases called `meter` and `centimeter` which are both based on the `float64` type. The `convertToCentimeters` function takes a length in meters (of type `meter`) and converts it to centimeters (of type `centimeter`). This allows for clear and expressive function signatures, and it makes the code more self-documenting. Let's see another example:
 
 ```go
 func main() {
@@ -402,7 +386,5 @@ func TestPrompt(t *testing.T) {
 	}
 }
 ```
-
-### What Does `os.Pipe` Function Do?
 
 The `Pipe` function creates a communication mechanism that allows one process to send data to another process. In the above example, it's used for capturing the output of a function, as you're doing in your test. It returns two `*os.File` values, one for the read end (`r`) and one for the write end (`w`) of the pipe.
