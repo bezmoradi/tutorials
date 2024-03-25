@@ -21,7 +21,7 @@ func main() {
 }
 ```
 
-When it comes to block-level scope, we can be even restrictive than the scope of a function block:
+When it comes to block-level scope, we can be even more restrictive than the scope of a function:
 
 ```go
 func main() {
@@ -93,7 +93,7 @@ func anotherFunction() {
 ```
 
 In the above program, we have the `name` variable at package-level; that's why it's accessible from any other part of that package (It's not accessible from other packages though).  
-Let's analyze what's happening when the `main` function is run. The Go compiler fist checks the block-level scope of the `main` function to see whether it finds any variable called `name` or not which in this case it doesn't find any. Then it goes one level up and starts looking for the `name` variable at package-level and finally it finds it. Now let's see what would happen if we have variables with identical names in different scopes:
+Let's analyze what's happening when the `main` function is run. The Go compiler first checks the block-level scope of the `main` function to see whether it finds any variable called `name` or not which in this case it doesn't find any; then it goes one level up and starts looking for the `name` variable at package-level and finally it finds it. Now let's see what would happen if we have variables with identical names in different scopes:
 
 ```go
 package main
@@ -108,7 +108,7 @@ func main() {
 }
 ```
 
-When we have a variable with the same name as in the package scope, it's called **Variable Shadowing**. As shown above, we have defined two variables with identical names but different scopes; meaning the `name` variable which is defined at the package-level scope is both accessible in functions within that package and all other files that belong to the `main` package. In the above program, the `fmt.Println` function first checks the function scope for a variable called `name`; if found, it would use it otherwise if would look for it at the package scope. Let's change the `main` function as follows:
+When we have a variable with the same name as in the package scope, it's called **Variable Shadowing**. As shown above, we have defined two variables with identical names but different scopes; meaning the `name` variable which is defined at the package-level scope is both accessible in functions within that package and all other files that belong to the `main` package. In the above program, the `fmt.Println` function first checks the function scope for a variable called `name`; if found, it would use it otherwise it would look for it at the package scope. Let's change the `main` function as follows:
 
 ```go
 package main

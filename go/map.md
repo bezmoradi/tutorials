@@ -1,6 +1,6 @@
 # Go > Maps
 
-Map is a data structure in Go that can be be used to group some values together (In other programming languages it's called object, hash table, dictionary etc). Basically, it can be thought of as a struct but slightly different. To understand how powerful maps are, let's first create a slice of strings and see what limitations we have while using that:
+Map is a data structure in Go that can be used to group some values together (In other programming languages it's called object, hash table, dictionary etc). Basically, it can be thought of as a struct but slightly different. To understand how powerful maps are, let's first create a slice of strings and see what limitations we have while using that:
 
 ```go
 package main
@@ -19,7 +19,7 @@ func main() {
 }
 ```
 
-The problem with using a slice for storing some values like use cases of the Go language is that the slice does not give us a hint about what we are dealing with; in other words, if somebody has no idea what those values are about, they would never figure it out. The other issue is that in order to get an element, we need to memorize its index which can be tricky. The map data structure can solve these issues:
+The problem with using a slice for storing some values is that the slice does not give us a hint about what we are dealing with; in other words, if somebody has no idea what those values are about, they would never figure it out. The other issue is that in order to get an element, we need to memorize its index which can be tricky. The map data structure can solve these issues:
 
 ```go
 goUseCases := map[string]string{
@@ -32,7 +32,7 @@ fmt.Println(goUseCases["cli"]) // Go to create fast and elegant CLIs.
 ```
 
 Keep in mind that like slices, the trailing comma after the last key/value pair is mandatory otherwise you will get compile-time error.  
-The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value which in this case is also string (As another example, if we need our values to be of type a slice of strings, we can define our map as `map[string][]string`). We can also initialized a map as empty then add elements to it:
+The `map[string]` part of defining a map is to specify the type of the keys which in this case is a string and `string` is used to define the value type which in this case is also string (To illustrate further, suppose we require our values to be organized as a slice of strings. In this case, we can specify our map as `map[string][]string.`). We can also initialize a map as empty then add elements to it:
 
 ```go
 goUseCases := map[string]string{}
@@ -42,7 +42,7 @@ goUseCases["web"] = "Go powers fast and scalable web applications."
 goUseCases["devops"] = "Go is built to support both DevOps and SRE"
 ```
 
-Maps in Go are dynamic meaning that you can always add elements to them or remove element from them:
+Maps are dynamic meaning you can always add elements to them or remove element from them:
 
 ```go
 goUseCases := map[string]string{
@@ -84,7 +84,7 @@ If we try to run the above code though, we will get the following error:
 panic: assignment to entry in nil map
 ```
 
-In Go, maps are **not** automatically initialized, so you need to create the map using make or using a composite literal before you can use it. In other words, the above way of creating maps is completely wrong.
+As maps are **not** automatically initialized, so you need to create the map using make or using a composite literal before you can use it. In other words, the above way of creating maps is completely wrong.
 
 ## How to Use the `make()` Function to Make Maps
 
@@ -109,7 +109,7 @@ goUseCases["web"] = "Go powers fast and scalable web applications."
 goUseCases["devops"] = "Go is built to support both DevOps and SRE"
 ```
 
-Unlike slices that get three arguments, `make()` for maps only gets two argument; the first one defines the type and the second one defines the length.
+Unlike slices that get three arguments, `make()` for maps only gets two argument; the first one defines the type and the second one defines the length:
 
 ```go
 goUseCases := make(map[string]string, 4)
@@ -200,7 +200,7 @@ func main() {
 }
 ```
 
-Now it's time to write a function for the above newly-created method:
+Now it's time to write a test for the above newly-created method:
 
 ```go
 package main
@@ -220,7 +220,7 @@ func TestAdd(t *testing.T) {
 
 ## Comma OK Idiom with Maps
 
-Accessing an element of a map can return two values instead of just one:
+Accessing an element of a map returns two values instead of just one:
 
 ```go
 goUseCases := map[string]string{
@@ -247,7 +247,6 @@ func main() {
 		"web":    "Go powers fast and scalable web applications.",
 		"devops": "Go is built to support both DevOps and SRE",
 	}
-
 	if cli, ok := goUseCases["NON_EXISTING_KEY"]; !ok {
 		fmt.Println("No such key exists")
 	} else {
@@ -304,7 +303,7 @@ web -> Go powers fast and scalable web applications.
 devops -> Go is built to support both DevOps and SRE
 ```
 
-In Go, when you use the `for` loop with a range over a map, the iteration order is not guaranteed and may appear random. This behavior is by design due to the way maps are implemented in Go. The rationale behind this design choice is to optimize for performance and efficiency. It allows Go's map implementation to remain lightweight and efficient for most operations without the overhead of maintaining a specific order.
+In Go, when you use the `for` loop with a range over a map, the iteration order is not guaranteed and may appear random. This behavior is by design due to the way maps are implemented in Go. The rationale behind this design choice is to optimize for performance and efficiency; it allows Go's map implementation to remain lightweight and efficient for most operations without the overhead of maintaining a specific order.
 
 ## Combine Other Data Structure with `map`
 
