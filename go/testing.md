@@ -1,4 +1,5 @@
 # Go > Testing
+
 First let's create a function called `concatTwoStrings` in `main.go` file:
 
 ```go
@@ -371,3 +372,54 @@ func assert(t *testing.T, got, want string) {
 ```
 
 The important thing about the `assert` helper function is calling `t.Helper()` which tells the test suite that this method is a helper. By doing this when it fails the line number reported will be in our function call rather than inside our test helper. This will help other developers track down problems easier.
+
+## How to Test `Stdout`
+
+Let's say we have a program as simple as this:
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func prompt() {
+	fmt.Print("This is written in Go")
+}
+
+func main() {
+	prompt() // This is written in Go
+}
+```
+
+To write a unit test for it we have:
+
+```go
+package main
+
+import (
+	"io"
+	"os"
+	"testing"
+)
+
+func TestPrompt(t *testing.T) {
+	oldStdout := os.Stdout  // Saves the original standard output to restore later
+	r, w, _ := os.Pipe()    // Creates a pipe to capture the standard output
+	os.Stdout = w           // Now anything written to os.Stdout will be captured by the pipe
+	prompt()                // Call the function
+	_ = w.Close()           // Close the piple not to cause any memory leak
+	os.Stdout = oldStdout   // Restores the original value of os.Stdout so that subsequent output goes to the actual standard output
+	out, _ := io.ReadAll(r) // Reads the output from the pipe and stores it in the variable out
+	if string(out) != "This is written in Go" {
+		t.Errorf("expected 'This is written in Go' but got %v", string(out))
+	}
+}
+```
+
+The `Pipe` function creates a communication mechanism that allows one process to send data to another process. In the above example, it's used for capturing the output of a function, as you're doing in your test. It returns two `*os.File` values, one for the read end (`r`) and one for the write end (`w`) of the pipe.
+
+## Links
+
+-   https://quii.gitbook.io/learn-go-with-tests

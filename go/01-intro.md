@@ -1,4 +1,4 @@
-# Go > Basics
+# Go > Intro
 
 Google created Go for three primary reasons:
 
@@ -6,8 +6,7 @@ Google created Go for three primary reasons:
 -   Efficient execution
 -   Ease of coding
 
-In Go, the `package main` declaration is a crucial part of creating executable programs. When you write a Go program, you organize your code into packages (A package is a collection of source files that work together to provide a set of functionalities). Each Go file starts with a `package` declaration, which defines the package to which the file belongs to. The `package main` is a special package in Go; it indicates that the Go file is the starting point of the executable program. When you create a Go executable, it must have a `package main` declaration in the file that contains the `main` function. This function serves as the entry point of the program, where execution begins when you run the compiled executable.  
-In the following program, `fmt` is one of built-in Go packages (Packages like `fmt` do not have a `func main()` just because they are not intended to be run as a program but instead used by other programs):
+In Go, the `package main` declaration is a crucial part of creating executable programs. When you write a Go program, you organize your code into packages (A package is a collection of source files that work together to provide a set of functionalities). Each Go file starts with the `package` declaration which defines the package to which the file belongs to. The `package main` is a special package in Go; it indicates that the Go file is the **starting point** of the executable program. When you create a Go executable, it must have a `package main` declaration in the file that contains the `main` function. This function serves as the entry point of the program, where execution begins when you run the compiled executable. In the following program, `fmt` is one of built-in Go packages (Packages like `fmt` do not have a `func main()` just because they are not intended to be run as a program but instead used by other programs):
 
 ```go
 package main
@@ -19,7 +18,7 @@ func main() {
 }
 ```
 
-Keep in mind that we can have only and only one function called `main`. However, if we try to build an executable by running `go build`, we would get the following error:
+Keep in mind that we can have only and only one function called `main`. If we try to build an executable by running `go build`, we would get the following error:
 
 ```text
 $ go build
@@ -48,7 +47,7 @@ go: to add module requirements and sums:
 	go mod tidy
 ```
 
-Now a module called `hello-world-module` is successfully created and if we take a peek at the project directory, we would see a file called `go.mod` is created:
+Now a module called `hello-world-module` is successfully created and if we take a peek at the project directory, we would see a file called `go.mod` as follows:
 
 ```text
 module hello-world-module
@@ -56,7 +55,7 @@ module hello-world-module
 go 1.21.5
 ```
 
-Now if we run `go build`, the program is successfully built and an executable file called `hello-world-module` will be added which by double clicking it, a new terminal window will be opened and program output is shown or as an alternative way, we can run it via terminal:
+Now if we run `go build`, the program is successfully built and an executable file called `hello-world-module` will be created which by double clicking it, a new terminal window will be opened and program output is shown or as an alternative way, we can run it via terminal:
 
 ```text
 $ ./hello-world-module
@@ -65,7 +64,7 @@ In the name of the most high
 
 The important note here is that for the `go build` command to run successfully, we have to have `package main` otherwise it will not figure out the entry point for our app.
 
-## Split Code into Multiple Files
+## Split Code into Multiple Files within One Package
 
 A set of files sharing the same package name form the implementation of a package. An implementation may require that all source files for a package inhabit the **same** directory. We can spread functions in different files:
 
@@ -96,7 +95,7 @@ func aFunction() {
 As both files belong to the same package (`main`), there is no need to import anything inside the `main.go` in order to use the external function. In order to run the app we have:
 
 ```text
-$ go rum main.go utils.co
+$ go run main.go utils.co
 ```
 
 Or we can:
@@ -107,7 +106,7 @@ $ go run .
 
 ## Split Code into Multiple Packages
 
-In bigger projects, we can place functionalities into different packages. Every package **must** be placed inside its own subfolder in our project and that subfolder should have the same name as the package:
+In bigger projects, we can place functionalities into different packages. Every package **must** be placed inside its own subfolder in our project and that subfolder is recommended have the same name as the package:
 
 ```text
 .
@@ -153,6 +152,35 @@ import utilities "github.com/<username>/tutorial/utils"
 
 func main() {
 	utilities.ExternalFunction()
+}
+```
+
+As already mentioned, it's recommended to have the same name for both directory and package name but you can have different names for the directory and package as follows:
+
+```go
+// helpers/some-file-name.go
+package utils
+
+import (
+	"fmt"
+)
+
+func ExternalFunction() {
+	fmt.Println("External function in another package called")
+}
+```
+
+In the `main` package you need to import the name of the directory not the package as follows but call the function on the package name (`utils`):
+
+```go
+package main
+
+import (
+	utils "github.com/<username>/tutorial/helpers"
+)
+
+func main() {
+	utils.ExternalFunction()
 }
 ```
 
@@ -205,23 +233,3 @@ And to get the latest version of a package we can do:
 $ go get github.com/Pallinder/go-randomdata@latest
 ```
 
-## An Intro into `go install`
-
-If we do `go install` inside a Go project' directory, the binary for that project will be created and added to `$GOPATH/bin` folder. We can also use third-party packages and install them using the `go install` command. This way, the new package will be downloaded, built and copied into the `$GOPATH/bin` folder and can be executed from anywhere on our machine.
-
-## An Intro to The `go env` Command
-
-By running the `go env` command inside the terminal, we'll get a bunch of metadata about our installation of Go:
-
-```text
-.
-.
-.
-GOPATH='/Users/<username>/go'
-GOROOT='/usr/local/go'
-.
-.
-.
-```
-
-`GOROOT` is where the main Go binary is installed on our local machine and `GOPATH` is where the packages we download using the `go get` command are located.
