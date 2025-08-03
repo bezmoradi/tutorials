@@ -103,7 +103,7 @@ package main
 
 import "fmt"
 
-func printIt(input interface{}) {
+func printIt(input any) {
 	fmt.Println(input)
 }
 
@@ -112,15 +112,17 @@ func main() {
 }
 ```
 
-By using the `interface{}` type, we give a hint to Go compiler that any value is accepted. Instead of `interface{}` we can also use the `any` keyword:
+By using the `any` type, we give a hint to Go compiler that any value is accepted. Instead of `any` we can also use the `interface{}` keyword:
 
 ```go
-func printIt(input any) {
+func printIt(input interface{}) {
 	fmt.Println(input)
 }
 ```
 
-We can also combine the `any` type with `switch` and type assertion in order to have full control on inputs:
+## Type Switch Syntax
+
+`input.(type)` can only be used inside a `switch` statement and allows you to check what concrete type is stored in a variable of type `any`. In other words, it extracts the actual underlying type of whatever value is stored in `input`:
 
 ```go
 package main
@@ -143,7 +145,11 @@ func main() {
 }
 ```
 
-The only thing that you need to bear in mind is the special syntax of `input.(type)`. Another way of getting the same functionality is through the following structure:
+The integer 7 gets stored in the `input` parameter (which has type `any`) then `input.(type)` reveals that the underlying type is `int` and finally the `switch` matches the `case int:` branch.
+
+### Regular Type Assertions
+
+Outside of `switch` statements, you'd use a different syntax for type assertions:
 
 ```go
 func printIt(input any) {
@@ -154,6 +160,17 @@ func printIt(input any) {
 	}
 
 	fmt.Printf("It is an integer of %v", integerValue) // It is an integer of 7
+}
+```
+You can also combine the `if` statement with the type assertion as below:
+
+```go
+func print(input any) {
+	if integerValue, ok := input.(int); ok {
+		fmt.Printf("It is an integer of %v", integerValue)
+		return
+	}
+	fmt.Println("It is not an integer")
 }
 ```
 
@@ -456,7 +473,7 @@ func sumUp(numbers ...int) int {
 }
 ```
 
-Such a function is called Variadic. Keep in mind that these functions can be called with zero arguments like `sumeUp()`. As another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of then into the `numbers ...int`
+Such a function is called Variadic. Keep in mind that these functions can be called with zero arguments like `sumUp()`. As another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of then into the `numbers ...int`
 
 ```go
 func sumUp(first int, numbers ...int) int {
@@ -617,8 +634,7 @@ func timer(f func()) {
 
 ## Inlining Decisions by Go Compiler
 
-Inlining in the context of Go (or any programming language) refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings.  
-Inlining can make your code faster, but it can also increase the size of the compiled code. It's a trade-off that the compiler balances based on what it thinks will be most efficient. As an example, let's dive deep into the following program:
+Inlining in the context of Go (or any other programming language) refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings. Inlining can make your code faster, but it can also increase the size of the compiled code. It's a trade-off that the compiler balances based on what it thinks will be most efficient. As an example, let's dive deep into the following program:
 
 ```go
 package main

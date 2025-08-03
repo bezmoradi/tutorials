@@ -43,7 +43,14 @@ name := "Go"
 name = "Golang"
 ```
 
-In Go, we can declare multiple variables of **the same type** in just one line:
+We can also append the previous value to the new one by using the `+=` operation as follows:
+
+```go
+name := "Go"
+name += "lang"
+```
+
+In this case, the new value of the `name` variable will be "Golang". In Go, we can declare multiple variables of **the same type** in just one line:
 
 ```go
 var name, fullName string = "Go", "Golang"
@@ -89,40 +96,31 @@ Before digging any deeper, let's have a refresher on how computers work with 0s 
 
 ```text
 +-------------+-------------+-------------------------+
-|   1 Light   |     2^1     |   Represents 2 things   |
+|   1 Light   |     2^1     |   Represents 2 States   |
 +-------------+-------------+-------------------------+
-|   2 Lights  |     2^2     |   Represents 4 things   |
+|   2 Lights  |     2^2     |   Represents 4 States   |
 +-------------+-------------+-------------------------+
-|   3 Lights  |     2^3     |   Represents 8 things   |
+|   3 Lights  |     2^3     |   Represents 8 States   |
 +-------------+-------------+-------------------------+
-|   4 Lights  |     2^4     |  Represents 16 things   |
+|   4 Lights  |     2^4     |  Represents 16 States   |
 +-------------+-------------+-------------------------+
-|   5 Lights  |     2^5     |  Represents 32 things   |
+|   5 Lights  |     2^5     |  Represents 32 States   |
 +-------------+-------------+-------------------------+
-|   6 Lights  |     2^6     |  Represents 64 things   |
+|   6 Lights  |     2^6     |  Represents 64 States   |
 +-------------+-------------+-------------------------+
-|   7 Lights  |     2^7     |  Represents 128 things  |
+|   7 Lights  |     2^7     |  Represents 128 States  |
 +-------------+-------------+-------------------------+
-|   8 Lights  |     2^8     |  Represents 256 things  |
+|   8 Lights  |     2^8     |  Represents 256 States  |
 +-------------+-------------+-------------------------+
 ```
 
 In order to understand this concept better, let's imagine we have a light that has only two states: On & Off; in other words, this one light can represent two states: On or Off. Now imagine instead of a light, we have two lights which in this case we can have four different states as follows:
 
 ```text
-On On Off Off
-Off Off On On
-On Off On Off
-Off on Off On
-```
-
-The binary representation of the above chart is as follows:
-
-```text
-1 1 0 0
-0 0 1 1
-1 0 1 0
-0 1 0 1
+OFF OFF → 0 0
+OFF ON  → 0 1
+ON OFF  → 1 0
+ON ON   → 1 1
 ```
 
 ASCII uses 8 bits (1 byte) or in other words eight different 0s and 1s to represent different characters which in total becomes 256 different characters (The word "bit" is combined by "bi" of "binary" and "t" of "digit"). With this in mind, there is no wonder that a bit can hold two numbers: 0 & 1. As an example, the capital "A" is represented by `01000001`.  
@@ -155,11 +153,10 @@ func main() {
 When it comes to numbers in Go, for more readability we can use the `_` character to separate zeros:
 
 ```go
-number := 1_000_000 // or 1000000
+number := 1_000_000 // Equals 1000000
 ```
 
-The above code is completely valid in Go.  
-When you create a new type using the `type` keyword, you're essentially creating an alias for an existing type:
+The above code is completely valid in Go. When you create a new type using the `type` keyword, you're essentially creating an alias for an existing type:
 
 ```go
 package main
@@ -178,7 +175,7 @@ func main() {
 }
 ```
 
-In the above program, we have created an alias called `customString` for the `string` type.
+In the above program, we have created an alias called `customString` for the `string` type. As the `logString` method is attached to the `customString` type, any variable of this type has access to that method. The key concept here is that in Go, you can take existing types (like `string`) and create your own version, then add special behaviors (methods) to them. So instead of just having a regular `string`, you now have a `customString` that knows how to print itself using the `logString()` method.
 
 ## Type Conversion
 
@@ -205,6 +202,7 @@ type centimeter float64
 func main() {
 	lengthInMeters := meter(2.5)
 	lengthInCentimeters := convertToCentimeters(lengthInMeters)
+	
 	fmt.Printf(
 		"Length in Meters: %.2f\nLength in Centimeters: %.2f\n",
 		lengthInMeters,
@@ -295,7 +293,7 @@ var (
 )
 ```
 
-We see that `Stdout` is created by called `NewFile` which has this format:
+We see that `Stdout` is created by calling `NewFile` which has this format:
 
 ```go
 func NewFile(fd uintptr, name string) *File
@@ -341,50 +339,3 @@ func main() {
 ```
 
 As the `Write` function needs to return an integer, we have returned an arbitrary integer but the main purpose here is to show how interfaces work.
-
-## How to Test `Stdout`
-
-Let's say we have a program as simple as this:
-
-```go
-package main
-
-import (
-	"fmt"
-)
-
-func prompt() {
-	fmt.Print("This is written in Go")
-}
-
-func main() {
-	prompt() // This is written in Go
-}
-```
-
-To write a unit test for it we have:
-
-```go
-package main
-
-import (
-	"io"
-	"os"
-	"testing"
-)
-
-func TestPrompt(t *testing.T) {
-	oldStdout := os.Stdout  // Saves the original standard output to restore later
-	r, w, _ := os.Pipe()    // Creates a pipe to capture the standard output
-	os.Stdout = w           // Now anything written to os.Stdout will be captured by the pipe
-	prompt()                // Call the function
-	_ = w.Close()           // Close the piple not to cause any memory leak
-	os.Stdout = oldStdout   // Restores the original value of os.Stdout so that subsequent output goes to the actual standard output
-	out, _ := io.ReadAll(r) // Reads the output from the pipe and stores it in the variable out
-	if string(out) != "This is written in Go" {
-		t.Errorf("expected 'This is written in Go' but got %v", string(out))
-	}
-}
-```
-
-The `Pipe` function creates a communication mechanism that allows one process to send data to another process. In the above example, it's used for capturing the output of a function, as you're doing in your test. It returns two `*os.File` values, one for the read end (`r`) and one for the write end (`w`) of the pipe.
