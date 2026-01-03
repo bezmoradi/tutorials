@@ -189,33 +189,34 @@ func main() {
 ```
 
 In the above snippet, first we have converted the `anotherName` variable to `customString` then called the `logString` method on it.  
-In Go, you can convert the value of one type to another by using a type conversion expression. The syntax for a type conversion is `T(x)`, where `T` is the target type, and `x` is the value you want to convert. As a more real-world example, let's consider the following program:
+In Go, you can convert the value of one type to another by using a type conversion expression. The syntax for a type conversion is `T(x)`, where `T` is the target type, and `x` is the value you want to convert.
+
+Imagine an API that accepts timeouts. One function expects seconds, another expects milliseconds. Using plain `float64` or `int` makes it very easy to pass the wrong unit. In real systems, developers constantly deal with milliseconds, seconds, and minutes and bugs happen when these get mixed up:
 
 ```go
 package main
 
 import "fmt"
 
-type meter float64
-type centimeter float64
+type Second float64
+type Millisecond float64
 
-func main() {
-	lengthInMeters := meter(2.5)
-	lengthInCentimeters := convertToCentimeters(lengthInMeters)
-	
-	fmt.Printf(
-		"Length in Meters: %.2f\nLength in Centimeters: %.2f\n",
-		lengthInMeters,
-		lengthInCentimeters,
-	)
+func (s Second) ToMilliseconds() Millisecond {
+	return Millisecond(s * 1000)
 }
 
-func convertToCentimeters(meterLength meter) centimeter {
-	return centimeter(meterLength * 100)
+func (s Second) IsTooLong() bool {
+	return s > 30
+}
+
+func main() {
+	requestTimeout := Second(2.5)
+
+	fmt.Println(requestTimeout.ToMilliseconds())
 }
 ```
 
-In this example, we have two type aliases called `meter` and `centimeter` which are both based on the `float64` type. The `convertToCentimeters` function takes a length in meters (of type `meter`) and converts it to centimeters (of type `centimeter`). This allows for clear and expressive function signatures, and it makes the code more self-documenting. Let's see another example:
+This is better than primitive types simply because you cannot accidentally pass Milliseconds where Seconds is expected. Let's see another example:
 
 ```go
 func main() {
@@ -249,8 +250,8 @@ cannot convert a (variable of type string) to type float32
 
 The `Printf` function formats according to a format specifier and writes to standard output:
 
--   `%v` gets replaced by the variable' value
--   `%T` gets replaced by the variable' type
+-   `%v` gets replaced by the variable's value
+-   `%T` gets replaced by the variable's type
 
 As an example we have:
 
@@ -315,27 +316,4 @@ func main() {
 }
 ```
 
-Simply put, `Println` is a wrapper around `Fprintln` function. Also, to prove that we can pass our own custom type that implements the `Writer` interface we have:
-
-```go
-package main
-
-import (
-	"fmt"
-)
-
-type MyCustomStruct struct{}
-
-func (m MyCustomStruct) Write(p []byte) (int, error) {
-	fmt.Println("here", string(p))
-
-	return 123456789, nil
-}
-
-func main() {
-	m := MyCustomStruct{}
-	fmt.Fprintln(m, "Hello World")
-}
-```
-
-As the `Write` function needs to return an integer, we have returned an arbitrary integer but the main purpose here is to show how interfaces work.
+Simply put, `Println` is a wrapper around `Fprintln` function.

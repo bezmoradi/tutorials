@@ -423,3 +423,200 @@ The `Pipe` function creates a communication mechanism that allows one process to
 ## Links
 
 -   https://quii.gitbook.io/learn-go-with-tests
+
+## Mock Library
+
+First of all, run the following command inside the project folder to install the mocking library:
+
+```bash
+$ go get github.com/stretchr/testify
+```
+
+The `HttpClient` is as follows:
+
+```go
+// http_client.go
+package main
+
+import (
+	"io"
+	"net/http"
+)
+
+type HttpClientInterface interface {
+	Get(url string) (string, error)
+}
+
+type HttpClient struct {
+	client *http.Client
+}
+
+func (h *HttpClient) Get(url string) (string, error) {
+	resp, err := h.client.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func NewHttpClient() *HttpClient {
+	return &HttpClient{
+		client: &http.Client{},
+	}
+}
+```
+
+Let's break down the `NewHttpClient()` function line by line:
+
+-   `func NewHttpClient() *HttpClient`
+
+    -   This function returns a **pointer** to `HttpClient` (the `*` before `HttpClient`)
+    -   Why pointer? Because `HttpClient` is going to hold state (the `http.Client`), and we want to share that same instance, not copy it around
+    -   To satisfy the return type, we need to return `&HttpClient{...}`. The `&` creates a pointer to the new `HttpClient` struct we're building which matches our return type `*HttpClient`
+    -   `client: &http.Client{}`creates a new `http.Client{}` and takes its address with `&` and it stores that pointer in the `client` field (Remember that the field is defined as `client *http.Client`, so it expects a pointer)
+
+The above file is used inside `main.go` like this:
+
+```go
+package main
+
+import "fmt"
+
+func callApi(client HttpClientInterface, url string) (string, error) {
+	response, err := client.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	return response, nil
+}
+
+func main() {
+	client := NewHttpClient()
+	response, err := callApi(client, "https://jsonplaceholder.typicode.com/posts/1")
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Response:\n%s\n", response)
+}
+```
+
+And here is the test file:
+
+```go
+package main
+
+import (
+	"errors"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+)
+
+type MockHttpClient struct {
+	mock.Mock
+}
+
+func (m *MockHttpClient) Get(url string) (string, error) {
+	args := m.Called(url)
+	return args.String(0), args.Error(1)
+}
+
+func Test_call_api_success(t *testing.T) {
+	// Creates a new instance of your mock HTTP client
+	mockClient := new(MockHttpClient)
+	// Configures the mock; when Get is called with testURL, return expectedResponse and nil (no error)
+	mockClient.On("Get", "example.com").Return("hi", nil)
+
+	response, err := callApi(mockClient, "example.com")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "hi", response)
+
+	// Verifies that Get was actually called with testURL
+	mockClient.AssertExpectations(t)
+}
+
+func TestFetchData_Error(t *testing.T) {
+	mockClient := new(MockHttpClient)
+
+	testURL := "https://invalid-url.com"
+	expectedError := errors.New("network error")
+
+	mockClient.On("Get", testURL).Return("", expectedError)
+
+	response, err := callApi(mockClient, testURL)
+
+	assert.Equal(t, "", response)
+	assert.Equal(t, expectedError, err)
+
+	mockClient.AssertExpectations(t)
+}
+```
+
+The `MockHttpClient` struct embeds `mock.Mock` from testify library. This gives `MockHttpClient` all the mock functionality it needs:
+
+-   **Recording method calls**: When you call methods on the mock, it records what was called, with what arguments
+-   **Setting up expectations**: The `On()` method from `mock.Mock` lets you define what a method should return
+-   **Verifying calls**: The `AssertExpectations()` method from `mock.Mock` checks that the expected methods were actually called
+-   **Returning values**: The `Called()` method from `mock.Mock` processes the call and returns the values you configured with `On()`
+
+By embedding `mock.Mock`, your struct automatically inherits all these capabilities without having to implement them yourself. It's Go's way of composition; you get all the mock behavior "for free" just by including it in your struct. The numbers `0` and `1` are **positions** (indexes) of the return values you specified in `.Return()`:
+
+```go
+mockClient.On("Get", testURL).Return(expectedResponse, nil)
+//                                   ↑                  ↑
+//                                position 0        position 1
+```
+
+So:
+
+-   `args.String(0)`: Gets the value at position 0 (`expectedResponse`)
+-   `args.Error(1)`: Gets the value at position 1 (`nil`)
+
+If you had only 1 return value:
+
+```go
+func (m *MockHttpClient) Get(url string) string {
+    args := m.Called(url)
+    return args.String(0)  // Only position 0
+}
+```
+
+And you need to say top as follows:
+
+```go
+mockClient.On("Get", url).Return("response")
+```
+
+If you had 3 return values:
+
+```go
+func (m *MockHttpClient) Get(url string) (string, int, error) {
+    args := m.Called(url)
+    return args.String(0), args.Int(1), args.Error(2)
+    //     position 0      position 1    position 2
+}
+```
+
+And you need to say top as follows:
+
+```go
+mockClient.On("Get", url).Return("response", 200, nil)
+```
+
+The positions **always match** the order you put values in `.Return()`. First value = 0, second = 1, third = 2, etc.
+
+
+## Links
+- https://github.com/cweill/gotests

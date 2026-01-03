@@ -112,7 +112,7 @@ func main() {
 }
 ```
 
-By using the `any` type, we give a hint to Go compiler that any value is accepted. Instead of `any` we can also use the `interface{}` keyword:
+By using the `any` type, we give a hint to Go compiler that any value is accepted. Instead of `any` we can also use the `interface{}` keyword which is an older way of achieving the same functionality:
 
 ```go
 func printIt(input interface{}) {
