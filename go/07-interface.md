@@ -1,7 +1,6 @@
 # Go > Interface
 
-In Go, interfaces serve as blueprints that describe the expected behaviors of types. Much like the saying "If it walks like a duck and it quacks like a duck, then it must be a duck", if a type adheres to the methods specified by an interface, it is treated as if it implements that interface (For more information, refer to [Duck typing](https://en.wikipedia.org/wiki/Duck_typing)).  
-Technically, we don't need to manually link a struct with an interface because Go handles the matching process automatically. If the type exhibits the required behaviors, it's effectively a 'duck' in the context of that interface and the compiler seamlessly recognizes and utilizes it.
+In Go, interfaces serve as blueprints that describe the expected behaviors of types. Much like the saying "If it walks like a duck and it quacks like a duck, then it must be a duck", if a type adheres to the methods specified by an interface, it is treated as if it implements that interface (For more information, refer to [Duck typing](https://en.wikipedia.org/wiki/Duck_typing)). Technically, we don't need to manually link a struct with an interface because Go handles the matching process automatically. If the type exhibits the required behaviors, it's effectively a "duck" in the context of that interface and the compiler seamlessly recognizes and utilizes it:
 
 ```go
 package main

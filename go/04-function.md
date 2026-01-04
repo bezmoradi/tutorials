@@ -162,6 +162,7 @@ func printIt(input any) {
 	fmt.Printf("It is an integer of %v", integerValue) // It is an integer of 7
 }
 ```
+
 You can also combine the `if` statement with the type assertion as below:
 
 ```go
@@ -258,7 +259,7 @@ func main() {
 }
 ```
 
-Bear in mind the inside the `doMath` function, the type of the third argument(`operation`) is `func(a, b int) int` meaning that it must be a function which accepts two input params of type integers and returns an integer as well. Keep in mind that for function params, we can also remove the param names as follows:
+Bear in mind that inside the `doMath` function, the type of the third argument is `func(a, b int) int` meaning that it must be a function which accepts two input params of type integers and returns an integer as well. Also, for function params, we can also remove the param names as follows:
 
 ```go
 func doMath(a int, b int, operation func(int, int) int) int {
@@ -559,9 +560,9 @@ To better figure it out we can add some logs as follows:
 
 ```go
 func main() {
-	fmt.Println("before foo() called")
+	fmt.Println("before foo()")
 	defer foo()
-	fmt.Println("after foo() called")
+	fmt.Println("after foo()")
 	bar()
 	fmt.Println("here is the last line")
 }
@@ -570,8 +571,8 @@ func main() {
 And in the output have have:
 
 ```text
-before foo() called
-after foo() called
+before foo()
+after foo()
 bar
 here is the last line
 foo
@@ -599,42 +600,9 @@ The last deferred function which prints `1` is the first function that will be e
 3
 ```
 
-## An Intro to Wrapper Functions is Go
-
-We can also create wrapper functions that accept another function and call it but before and after that function call, do some other operations (It can be compared to the Decorator Design Pattern). For example, in the following program we have created a wrapper function called `timer()` which calculated the total amount of time it takes to run its input function:
-
-```go
-package main
-
-import (
-	"fmt"
-	"time"
-)
-
-func main() {
-	timer(doSomeWork)
-}
-
-func doSomeWork() {
-	for i := 0; i < 1_000; i++ {
-		fmt.Println(i)
-	}
-}
-
-func timer(f func()) {
-	start := time.Now()
-
-	f()
-
-	elapsed := time.Since(start)
-
-	fmt.Printf("Total time executing this function is: %v", elapsed)
-}
-```
-
 ## Inlining Decisions by Go Compiler
 
-Inlining in the context of Go (or any other programming language) refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings. Inlining can make your code faster, but it can also increase the size of the compiled code. It's a trade-off that the compiler balances based on what it thinks will be most efficient. As an example, let's dive deep into the following program:
+Inlining in the context of Go refers to a compiler optimization where a function's code is inserted directly into the place where it's called instead of being executed as a separate function. This can improve performance by reducing the overhead of function calls. When the compiler inlines a function, it's like copying and pasting its code wherever the function is used. It can make things faster because there's no need to jump to another part of the code to execute that function; everything happens right where it's needed. However, the decision of whether or not to inline a function is usually made by the compiler itself based on various factors like the size of the function, how many times it's called, and the optimization settings. Inlining can make your code faster, but it can also increase the size of the compiled code. It's a trade-off that the compiler balances based on what it thinks will be most efficient. As an example, let's dive deep into the following program:
 
 ```go
 package main

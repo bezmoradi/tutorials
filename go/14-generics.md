@@ -287,3 +287,31 @@ func main() {
 	fmt.Println(result)
 }
 ```
+
+
+## Add Generic Types to Structs
+
+In Go, we can add generics to functions; likewise, we can add generic types to structs as well:
+
+```go
+package main
+
+import "fmt"
+
+type person[T string | int] struct {
+	lastName  string
+	firstName string
+	metadata  T
+}
+
+func main() {
+	p := person[string]{
+		firstName: "John",
+		lastName:  "Doe",
+		metadata:  "this is a generic type",
+	}
+	fmt.Println(p)
+}
+```
+
+As shown above, type of the `metadata` can either be `string` or `int`.

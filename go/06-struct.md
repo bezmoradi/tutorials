@@ -1,6 +1,6 @@
 # Go > Struct
 
-It is short for **struct**ure which can be thought of as a collection of properties that are related together but have different types. The struct data structure in Go is kind of the same as a class in other programming languages.
+It is short for **struct**ure which can be thought of as a collection of properties that are related together but have different types. The struct data structure in Go is kind of the same as a class in other programming languages:
 
 ```go
 package main
@@ -166,134 +166,9 @@ func main() {
 }
 ```
 
-## Add Generic Types
-
-In Go, we can add generics to functions; likewise, we can add generic types to structs as well:
-
-```go
-package main
-
-import "fmt"
-
-type person[T string | int] struct {
-	lastName  string
-	firstName string
-	metadata  T
-}
-
-func main() {
-	p := person[string]{
-		firstName: "John",
-		lastName:  "Doe",
-		metadata:  "this is a generic type",
-	}
-	fmt.Println(p)
-}
-```
-
-As shown above, type of the `metadata` can either be `string` or `int`.
-
-## Nested Structs
-
-As there is not any class concept in Go, we can compare this feature of structs to OOP inheritance. To define nested structs we have:
-
-```go
-package main
-
-import "fmt"
-
-type person struct {
-	firstName string
-	lastName  string
-	contact   contact
-}
-
-type contact struct {
-	cell    string
-	address string
-}
-
-func main() {
-	p := person{
-		firstName: "John",
-		lastName:  "Doe",
-		contact: contact{
-			cell:    "1234567890",
-			address: "L4X9A6",
-		},
-	}
-
-	fmt.Println(p) // {John Doe {1234567890 L4X9A6}}
-}
-```
-
-Another way of defining embedded structs is as follows:
-
-```go
-type person struct {
-	firstName string
-	lastName  string
-	contact
-}
-```
-
-Like JavaScript ES6 short-hand notation, we can remove the `contact` type if both the key and struct have the same name. To understand it better, let's see the following example:
-
-```go
-package main
-
-import "fmt"
-
-type person struct {
-	firstName string
-	lastName  string
-}
-
-type adminUser struct {
-	person      person
-	permissions string
-}
-
-func main() {
-	admin := adminUser{
-		permissions: "READ/WRITE",
-		person: person{
-			firstName: "John",
-			lastName:  "Doe",
-		},
-	}
-	fmt.Println(admin) // {{John Doe} READ/WRITE}
-}
-```
-
-Technically, the `adminUser` struct inherits all features of the `person` struct. Now let's add a method for the `person`:
-
-```go
-func (p person) printPersonData() {
-	fmt.Println(p.firstName, p.lastName)
-}
-```
-
-Now the `adminUser` also inherits this method and inside the `main()` function we can call it like this:
-
-```go
-admin.person.printPersonData()
-```
-
-It's too verbose if each time we type the full path of `admin.person`; to tackle that, we have to change the `adminUser` struct as follows:
-
-```go
-type adminUser struct {
-	person
-	permissions string
-}
-```
-
-Instead of explicitly adding the nested type, we anonymously add that. From now on, we can easily call `admin.printPersonData()` (Still we can call it like `admin.person.printPersonData()` as well).
-
 ## Receiver Functions
 
-We can also attach functions to structs and those functions can be called by variables of that type. Such functions are called Method:
+We can also attach functions to structs and those functions can be called by variables of that type. Such a function is called Method:
 
 ```go
 package main
@@ -417,23 +292,7 @@ func main() {
 }
 ```
 
-In the above code we have removed the `&` while calling `person{}`. The code works fine because Go has a feature called "automatic referencing of methods" which simplifies working with pointers to objects; in other words, Go automatically takes the address of `p` when calling the method with a pointer receiver. When you define a method with a receiver that is a pointer to a type (`*person` in this case), Go allows you to call that method on both the pointer to the object and the object itself. In this example, when you call `p.updateName("Jane")`, Go automatically interprets this as if you had called `(&p).updateName("Jane")`, knowing that `updateName` has a receiver of type `*person`. This is a convenience provided by Go to make code cleaner and more readable. So, whether you explicitly use the pointer or not, Go internally handles the conversion between the object and its pointer, allowing both versions to work correctly.  
-Now it's time to write a test:
-
-```go
-package main
-
-import "testing"
-
-func TestUpdateName(t *testing.T) {
-	updatedName := "Jane"
-	p := person{firstName: "John", lastName: "Doe"}
-	p.updateName(updatedName)
-	if p.firstName != updatedName {
-		t.Errorf("expected %v but got %v", updatedName, p.firstName)
-	}
-}
-```
+In the above code we have removed the `&` while calling `person{}`. The code works fine because Go has a feature called "automatic referencing of methods" which simplifies working with pointers to objects; in other words, Go automatically takes the address of `p` when calling the method with a pointer receiver. When you define a method with a receiver that is a pointer to a type (`*person` in this case), Go allows you to call that method on both the pointer to the object and the object itself. In this example, when you call `p.updateName("Jane")`, Go automatically interprets this as if you had called `(&p).updateName("Jane")`, knowing that `updateName` has a receiver of type `*person`. This is a convenience provided by Go to make code cleaner and more readable. So, whether you explicitly use the pointer or not, Go internally handles the conversion between the object and its pointer, allowing both versions to work correctly.
 
 ## Constructor Functions
 
@@ -556,53 +415,104 @@ func main() {
 ```
 
 So this rule specifies whether the fields of a struct can be public to the outside world or not.
-Now it's time to write some tests for our package:
+
+## Nested Structs
+
+As there is not any class concept in Go, we can compare this feature of structs to OOP inheritance. To define nested structs we have:
 
 ```go
-package user
+package main
 
-import "testing"
+import "fmt"
 
-func TestNewPerson(t *testing.T) {
-	tests := []struct {
-		name         string
-		firstName    string
-		lastName     string
-		result       Person
-		errorMessage string
-	}{
-		{
-			name:         "valid input",
-			firstName:    "John",
-			lastName:     "Doe",
-			result:       Person{FirstName: "John", LastName: "Doe"},
-			errorMessage: "",
-		},
-		{
-			name:         "empty FirstName",
-			lastName:     "Doe",
-			errorMessage: "either first name of last name is empty",
-		},
-		{
-			name:         "empty LastName",
-			firstName:    "John",
-			errorMessage: "either first name of last name is empty",
+type person struct {
+	firstName string
+	lastName  string
+	contact   contact
+}
+
+type contact struct {
+	cell    string
+	address string
+}
+
+func main() {
+	p := person{
+		firstName: "John",
+		lastName:  "Doe",
+		contact: contact{
+			cell:    "1234567890",
+			address: "L4X9A6",
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			p, err := New(test.firstName, test.lastName)
-			if err != nil && err.Error() != test.errorMessage {
-				t.Errorf("expected %v but got %v", test.errorMessage, err.Error())
-			}
-			if p != test.result {
-				t.Errorf("expected %v but got %v", test.result, p)
-			}
-		})
-	}
+	fmt.Println(p) // {John Doe {1234567890 L4X9A6}}
 }
 ```
+
+Another way of defining embedded structs is as follows:
+
+```go
+type person struct {
+	firstName string
+	lastName  string
+	contact
+}
+```
+
+Like JavaScript ES6 short-hand notation, we can remove the `contact` type if both the key and struct have the same name. To understand it better, let's see the following example:
+
+```go
+package main
+
+import "fmt"
+
+type person struct {
+	firstName string
+	lastName  string
+}
+
+type adminUser struct {
+	person      person
+	permissions string
+}
+
+func main() {
+	admin := adminUser{
+		permissions: "READ/WRITE",
+		person: person{
+			firstName: "John",
+			lastName:  "Doe",
+		},
+	}
+	fmt.Println(admin) // {{John Doe} READ/WRITE}
+}
+```
+
+Technically, the `adminUser` struct inherits all features of the `person` struct. Now let's add a method for the `person`:
+
+```go
+func (p person) printPersonData() {
+	fmt.Println(p.firstName, p.lastName)
+}
+```
+
+Now the `adminUser` also inherits this method and inside the `main()` function we can call it like this:
+
+```go
+admin.person.printPersonData()
+```
+
+It's too verbose if each time we type the full path of `admin.person`; to tackle that, we have to change the `adminUser` struct as follows:
+
+```go
+type adminUser struct {
+	person
+	permissions string
+}
+```
+
+Instead of explicitly adding the nested type, we anonymously add that. From now on, we can easily call `admin.printPersonData()` (Still we can call it like `admin.person.printPersonData()` as well).
 
 ## Struct Tags
 
@@ -634,7 +544,7 @@ func main() {
 }
 ```
 
-As shown above, the output is empty simply because all keys of the `person` struct must be **PascalCase** for the `json.Marshal` function to be able to parse them. Here is the fix:
+As shown above, the output is empty simply because all keys of the `person` struct must start with first letter as **Uppercase** for the `json.Marshal` function to be able to parse them. Here is the fix:
 
 ```go
 type person struct {
@@ -652,7 +562,7 @@ func main() {
 }
 ```
 
-If we want to omit the struct key if empty, we can change it to
+If we want to omit the struct key if empty, we can:
 
 ```go
 type person struct {
@@ -670,7 +580,7 @@ func main() {
 }
 ```
 
-Keep in mind that before the `omitempty` keyword there should not be any white space.
+Keep in mind that before the `omitempty` keyword there should **not** be any white space.
 
 ## An Intro to Struct Validation
 
@@ -722,38 +632,4 @@ func main() {
 }
 ```
 
-For the `validator` package to work properly, struct fields must be PascalCase.
-
-## How to Embed A Struct in A Map
-
-To do so we have:
-
-```go
-package main
-
-import "fmt"
-
-type person struct {
-	firstName string
-	lastName  string
-}
-
-func main() {
-	p1 := person{
-		firstName: "John",
-		lastName:  "Doe",
-	}
-
-	p2 := person{
-		firstName: "Jane",
-		lastName:  "Doe",
-	}
-
-	m := map[string]person{
-		p1.firstName: p1,
-		p2.firstName: p2,
-	}
-
-	fmt.Println(m) // map[Jane:{Jane Doe} John:{John Doe}]
-}
-```
+For the `validator` package to work properly, struct fields must start with the first letter as **Uppercase**.

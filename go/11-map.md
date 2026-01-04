@@ -415,6 +415,40 @@ func TestCountWords(t *testing.T) {
 }
 ```
 
+## How to Embed A Struct in A Map
+
+To do so we have:
+
+```go
+package main
+
+import "fmt"
+
+type person struct {
+	firstName string
+	lastName  string
+}
+
+func main() {
+	p1 := person{
+		firstName: "John",
+		lastName:  "Doe",
+	}
+
+	p2 := person{
+		firstName: "Jane",
+		lastName:  "Doe",
+	}
+
+	m := map[string]person{
+		p1.firstName: p1,
+		p2.firstName: p2,
+	}
+
+	fmt.Println(m) // map[Jane:{Jane Doe} John:{John Doe}]
+}
+```
+
 ## Maps vs. Structs
 
 There are some main fundamental differences between maps and structs.
