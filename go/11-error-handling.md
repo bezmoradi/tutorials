@@ -36,51 +36,6 @@ func (e *errorString) Error() string {
 
 What the `New` function does is that it creates a variable of type `errorString` and passes its input param as its `s` field. For the `errorString` type to be of type `error` interface, it needs to have an `Error` method which returns a string.
 
-## Introduction to The `log` Package
-
-One of the differences between the `fmt.Println` function and `log.Println` is that the latter also prints the date and time:
-
-```go
-package main
-
-import (
-	"errors"
-	"log"
-)
-
-func main() {
-	err := errors.New("this is a custom-made error")
-	log.Print(err) // 2024/01/08 18:40:38 this is a custom-made error
-}
-```
-
-The `fmt` package formats an error value by calling its `Error` method. One other difference is that with the `log` package we can define **where** the log needs to go:
-
-```go
-package main
-
-import (
-	"fmt"
-	"log"
-	"os"
-)
-
-func main() {
-	f, err := os.Create("logs.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-	_, err = os.Open("NON_EXISTING_FILE")
-	if err != nil {
-		log.Println(err)
-	}
-}
-```
-
-In this program, first we create a brand-new file called `logs.txt` then by calling `log.SetOutput(f)`, we instruct the `log` package to send logs to that file instead of `Stdout`.
-
 ## Difference between `Exit` and `Panic`
 
 The `log.Fatal` function calls `os.Exit(1)` and the program terminates immediately while deferred functions are not run:
@@ -129,7 +84,7 @@ func main() {
 }
 ```
 
-Whereas the `log.Panic` function implies that there is an issue but sill we have a chance to recover our program from terminating:
+Whereas the `log.Panic` function implies that there is an issue but still we have a chance to recover our program from terminating:
 
 ```go
 package main
@@ -167,7 +122,7 @@ func main() {
 }
 ```
 
-The `recover` function is built-in into Go that regains the control of a panicking goroutine which is only useful inside deferred functions. In that case, calling `recover` will capture the value given to the `panic` function and resume the normal execution. In Go, `panic` and `recover` are used to manage unexpected situations in your code, especially during runtime errors:
+The `recover` function is built into Go that regains the control of a panicking goroutine which is only useful inside deferred functions. In that case, calling `recover` will capture the value given to the `panic` function and resume the normal execution. In Go, `panic` and `recover` are used to manage unexpected situations in your code, especially during runtime errors:
 
 ```go
 package main
@@ -197,25 +152,9 @@ func main() {
 
 The `recover` function returns the value that was passed to the `panic`. If there is no `panic` or if `recover` is called outside the deferred function or after the panic has propagated outside that function, it returns `nil`.
 
-## Create Custom Errors
+## Creating Custom Errors
 
-We can create custom errors as long as they adhere to the `error` interface:
-
-```go
-package main
-
-import (
-	"errors"
-	"fmt"
-)
-
-func main() {
-	err := errors.New("this is a custom-made error")
-	fmt.Print(err) // this is a custom-made error
-}
-```
-
-Let's create a factory function for creating errors:
+We can create custom errors as long as they adhere to the `error` interface. Let's create a factory function for creating errors:
 
 ```go
 package main
@@ -245,17 +184,16 @@ The `errorGenerator` function receives an input param of type `error` meaning an
 package main
 
 import (
-	"errors"
 	"fmt"
 )
 
 type customError struct {
-	err      error
+	s        string
 	fileName string
 }
 
 func (c customError) Error() string {
-	return fmt.Sprintf("%v -> %v", c.fileName, c.err)
+	return fmt.Sprintf("%v -> %v", c.fileName, c.s)
 }
 
 func errorGenerator(e error) string {
@@ -266,7 +204,7 @@ func errorGenerator(e error) string {
 func main() {
 	err := customError{
 		fileName: "main.go",
-		err:      errors.New("this is an error"),
+		s:        "this is an error",
 	}
 
 	fmt.Println(errorGenerator(err)) // main -> main.go -> this is an error
