@@ -40,6 +40,7 @@ In Go, `package main` has a special meaning; it tells Go that this package shoul
 -   The `main` package must contain exactly one `main()` function
 -   The `main()` function is the entry point where program execution begins
 -   You cannot have multiple `main()` functions in your program
+-   Packages like `fmt` don't have a `main()` function because they're libraries meant to be used by other programs, not run directly.
 
 ### What Are Modules?
 
@@ -65,8 +66,7 @@ func main() {
 
 If we try to build an executable by running `go build` without a module, we would get an error:
 
-```sh
-go build
+```text
 go: go.mod file not found in current directory or any parent directory; see 'go help modules'
 ```
 
@@ -79,66 +79,43 @@ go: to add module requirements and sums:
 	go mod tidy
 ```
 
-**Module naming**: For local projects, you can use simple names like `hello-world`. For projects you plan to publish, use a path like `github.com/username/project`.
-
-Now a file called `go.mod` is created in your directory:
+For local projects, you can use simple names like `hello-world`. For projects you plan to publish, use a path like `github.com/username/project`. Now a file called `go.mod` is created in your directory:
 
 ```text
 module hello-world
 
-go 1.24
+go 1.25.6
 ```
 
-**Understanding `go.mod`**:
-
--   **First line** (`module hello-world`): Your module's name/path
--   **Second line** (`go 1.24`): Minimum Go version required
--   **Additional lines** (when you add dependencies): List of dependencies with their versions
+Understanding `go.mod` starts with its structure. The first line, `module hello-world`, defines your module's name or import path and is used by Go to identify the project. The next line, `go 1.25.6`, specifies the minimum Go version required to build the module. Any additional lines that appear as you add dependencies list the external packages your project relies on, along with the exact versions Go should use.
 
 Now if we run `go build`, the program compiles successfully:
 
 ```bash
-$ go build
+go build
 ```
 
-This creates an executable file named `hello-world` (or `hello-world.exe` on Windows). Run it:
+This creates an executable file named `hello-world`. Run it:
 
 ```bash
-$ ./hello-world          # Linux/macOS
-$ .\hello-world.exe      # Windows
+$ ./hello-world
 Hello, World!
 ```
 
-**Key point**: The `go build` command requires `package main` to create an executable. Without it, Go doesn't know where the program should start.
+The `go build` command requires `package main` to create an executable. Without it, Go doesn't know where the program should start. We can also get the output without first building the program:
 
-You should see: `Hello, World!`
+```bash
+go run main.go
+Hello, World!
+```
 
 **What just happened?** Go compiled your code to a temporary executable and ran it. For development, this is convenient. For production, you'll want to build a standalone executable.
 
-**Example**:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("This is the entry point")
-}
-```
-
-**Note**: Packages like `fmt` don't have a `main()` function because they're libraries meant to be used by other programs, not run directly.
-
 ## Organizing Code: Multiple Files in One Package
 
-As your code grows, you'll want to split it across multiple files for better organization. All files in the same directory with the same `package` declaration belong to that package.
-
-**Why this matters**: You can have hundreds of files in a single package, making it easy to organize related functionality without complex import statements.
-
-**Example**: Let's split our code into two files:
+As your code grows, you'll want to split it across multiple files for better organization. All files in the same directory with the same `package` declaration belong to that package. Let's split our code into two files. `main.go` will be as follows:
 
 ```go
-// main.go
 package main
 
 func main() {
@@ -146,8 +123,9 @@ func main() {
 }
 ```
 
+We will create a new file called `greet.go`:
+
 ```go
-// greet.go
 package main
 
 import "fmt"
@@ -157,20 +135,18 @@ func greet() {
 }
 ```
 
-Since both files have `package main`, they're part of the same package. No imports needed between them—they automatically see each other's functions.
-
-**Running the code**:
+Since both files have `package main`, they're part of the same package. No imports needed between them as they automatically see each other's functions. Now let's run the code:
 
 ```bash
 # Option 1: Specify all files
-$ go run main.go greet.go
+go run main.go greet.go
 
 # Option 2: Run all files in the directory (recommended)
-$ go run .
+go run .
 
 # Option 3: Build an executable
-$ go build
-$ ./hello-world
+go build
+./hello-world
 ```
 
 **Best practice**: Use `go run .` or `go build` instead of listing individual files. It's less error-prone and works regardless of how many files you have.
