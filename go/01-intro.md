@@ -18,19 +18,37 @@ Verify the installation by running:
 go version
 ```
 
-You should see output like: `go version go1.24.0 darwin/amd64` (version may vary). To update Go to the latest version:
+You should see output like: `go version go1.25.6 darwin/arm64` (your version may vary). To update Go to the latest version, we have:
 
 ```bash
 brew upgrade go
 ```
 
-## Your First Go Program: Hello World
+## Hello World Go Program
 
-Let's write your first Go program. Create a new directory for your project:
+Before writing our first Go program, it's important to develop a high-level understanding of Go's package and module concepts.
+
+### What Are Packages?
+
+A **package** is a collection of Go source files in the same directory that work together. Packages are Go's way of organizing and reusing code. Without packages, all code would be in one giant file, making it impossible to organize large projects or share code between projects. Packages solve this by providing namespaces and encapsulation.
+
+In Go, `package main` has a special meaning; it tells Go that this package should be compiled into an executable program, not a library.
+
+**Key rules**:
+
+-   Executable programs must have exactly one `package main`
+-   The `main` package must contain exactly one `main()` function
+-   The `main()` function is the entry point where program execution begins
+-   You cannot have multiple `main()` functions in your program
+
+### What Are Modules?
+
+Before Go 1.11, Go used `$GOPATH` for managing dependencies. Since Go 1.11, Go uses **modules** which is a collection of related packages with versioning support. Modules solve dependency management, version control, and reproducible builds. They let you specify exactly which version of each dependency your project uses.
+
+With these concepts in mind, now let's start creating our first program.
 
 ```bash
-mkdir hello-world
-cd hello-world
+mkdir hello-world && cd hello-world
 ```
 
 Create a file named `main.go` with the following content:
@@ -45,66 +63,17 @@ func main() {
 }
 ```
 
-Run it:
-
-```bash
-go run main.go
-```
-
-You should see: `Hello, World!`
-
-**What just happened?** Go compiled your code to a temporary executable and ran it. For development, this is convenient. For production, you'll want to build a standalone executable.
-
-## Understanding Packages and Modules
-
-### What Are Packages?
-
-A **package** is a collection of Go source files in the same directory that work together. Packages are Go's way of organizing and reusing code.
-
-**Why packages exist**: Without packages, all code would be in one giant file, making it impossible to organize large projects or share code between projects. Packages solve this by providing namespaces and encapsulation.
-
-### The Special `package main`
-
-In Go, `package main` has a special meaning—it tells Go that this package should be compiled into an executable program, not a library.
-
-**Key rules**:
-
--   Executable programs must have exactly one `package main`
--   The `main` package must contain exactly one `main()` function
--   The `main()` function is the entry point where program execution begins
--   You cannot have multiple `main()` functions in your program
-
-**Example**:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	fmt.Println("This is the entry point")
-}
-```
-
-**Note**: Packages like `fmt` don't have a `main()` function because they're libraries meant to be used by other programs, not run directly.
-
-### What Are Modules?
-
-Before Go 1.11, Go used `$GOPATH` for managing dependencies. Since Go 1.11, Go uses **modules**—a collection of related packages with versioning support.
-
-**Why modules exist**: Modules solve dependency management, version control, and reproducible builds. They let you specify exactly which version of each dependency your project uses.
-
 If we try to build an executable by running `go build` without a module, we would get an error:
 
-```text
-$ go build
+```sh
+go build
 go: go.mod file not found in current directory or any parent directory; see 'go help modules'
 ```
 
 This error tells us we need to create a module. Let's do that:
 
 ```bash
-$ go mod init hello-world
+go mod init hello-world
 go: creating new go.mod: module hello-world
 go: to add module requirements and sums:
 	go mod tidy
@@ -141,6 +110,24 @@ Hello, World!
 ```
 
 **Key point**: The `go build` command requires `package main` to create an executable. Without it, Go doesn't know where the program should start.
+
+You should see: `Hello, World!`
+
+**What just happened?** Go compiled your code to a temporary executable and ran it. For development, this is convenient. For production, you'll want to build a standalone executable.
+
+**Example**:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("This is the entry point")
+}
+```
+
+**Note**: Packages like `fmt` don't have a `main()` function because they're libraries meant to be used by other programs, not run directly.
 
 ## Organizing Code: Multiple Files in One Package
 
