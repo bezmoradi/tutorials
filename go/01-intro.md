@@ -1,6 +1,6 @@
 # Go > Introduction
 
-Go (also called Golang) is a statically typed, compiled programming language designed at Google in 2007 by Robert Griesemer, Rob Pike, and Ken Thompson.
+[Go](https://go.dev/) (also called Golang) is a statically typed, compiled programming language designed at Google in 2007 by Robert Griesemer, Rob Pike, and Ken Thompson.
 
 For decades, single-threaded programs benefited from steady increases in CPU clock speeds. Based on trends before 2003, industry projections anticipated 10 GHz processors by 2005. However, fundamental physical constraints prevented this trajectory from continuing.
 
@@ -24,11 +24,7 @@ Verify the installation by running:
 go version
 ```
 
-You should see output like: `go version go1.24.0 darwin/amd64` (version may vary).
-
-### Updating Go
-
-To update Go to the latest version:
+You should see output like: `go version go1.24.0 darwin/amd64` (version may vary). To update Go to the latest version:
 
 ```bash
 brew upgrade go
@@ -78,10 +74,11 @@ A **package** is a collection of Go source files in the same directory that work
 In Go, `package main` has a special meaning—it tells Go that this package should be compiled into an executable program, not a library.
 
 **Key rules**:
-- Executable programs must have exactly one `package main`
-- The `main` package must contain exactly one `main()` function
-- The `main()` function is the entry point where program execution begins
-- You cannot have multiple `main()` functions in your program
+
+-   Executable programs must have exactly one `package main`
+-   The `main` package must contain exactly one `main()` function
+-   The `main()` function is the entry point where program execution begins
+-   You cannot have multiple `main()` functions in your program
 
 **Example**:
 
@@ -130,9 +127,10 @@ go 1.24
 ```
 
 **Understanding `go.mod`**:
-- **First line** (`module hello-world`): Your module's name/path
-- **Second line** (`go 1.24`): Minimum Go version required
-- **Additional lines** (when you add dependencies): List of dependencies with their versions
+
+-   **First line** (`module hello-world`): Your module's name/path
+-   **Second line** (`go 1.24`): Minimum Go version required
+-   **Additional lines** (when you add dependencies): List of dependencies with their versions
 
 Now if we run `go build`, the program compiles successfully:
 
@@ -201,10 +199,11 @@ $ ./hello-world
 As projects grow, you'll want to organize code into multiple packages. Each package lives in its own subdirectory.
 
 **Why multiple packages**: They provide:
-- **Encapsulation**: Hide internal implementation details
-- **Namespace management**: Avoid naming conflicts
-- **Reusability**: Share code across different parts of your project
-- **Team collaboration**: Different teams can own different packages
+
+-   **Encapsulation**: Hide internal implementation details
+-   **Namespace management**: Avoid naming conflicts
+-   **Reusability**: Share code across different parts of your project
+-   **Team collaboration**: Different teams can own different packages
 
 ### Package Structure
 
@@ -238,8 +237,9 @@ func internalFunction() {
 ```
 
 **Important**: In Go, capitalization determines visibility:
-- **Uppercase first letter** = exported (public)
-- **Lowercase first letter** = unexported (private to the package)
+
+-   **Uppercase first letter** = exported (public)
+-   **Lowercase first letter** = unexported (private to the package)
 
 ### Importing Local Packages
 
@@ -340,6 +340,7 @@ London  # Or another random city
 ```
 
 Go automatically:
+
 1. Downloaded the package
 2. Added it to `go.mod`
 3. Added checksums to `go.sum`
@@ -360,15 +361,17 @@ require github.com/Pallinder/go-randomdata v1.2.0 // indirect
 **go.mod** lists your dependencies and their versions.
 
 **go.sum** contains cryptographic checksums of dependency content. This ensures:
-- You get the exact same code every time
-- No one can tamper with packages
-- Reproducible builds
+
+-   You get the exact same code every time
+-   No one can tamper with packages
+-   Reproducible builds
 
 **Note**: Unlike Node.js's `node_modules`, Go doesn't store dependencies in your project. They're cached globally in `$GOPATH/pkg/mod` (usually `~/go/pkg/mod`) and shared across all your projects.
 
 ### Module Commands
 
 **Adding/updating a dependency**:
+
 ```bash
 $ go get github.com/Pallinder/go-randomdata@latest  # Latest version
 $ go get github.com/Pallinder/go-randomdata@v1.2.3  # Specific version
@@ -376,11 +379,13 @@ $ go get github.com/Pallinder/go-randomdata@v1      # Latest v1.x.x
 ```
 
 **Downloading all dependencies** (for teammates):
+
 ```bash
 $ go mod download
 ```
 
 **Cleaning up unused dependencies**:
+
 ```bash
 $ go mod tidy
 ```
@@ -433,10 +438,11 @@ $ go vet ./...
 ```
 
 It catches issues like:
-- Unreachable code
-- Invalid format strings in Printf
-- Misuse of sync.Mutex
-- And many more
+
+-   Unreachable code
+-   Invalid format strings in Printf
+-   Misuse of sync.Mutex
+-   And many more
 
 ### go mod tidy - Clean Dependencies
 
@@ -509,9 +515,10 @@ replace github.com/someone/package => ../local-copy
 ```
 
 **Use cases**:
-- Testing local changes before publishing
-- Using a fork temporarily
-- Working on multiple modules simultaneously
+
+-   Testing local changes before publishing
+-   Using a fork temporarily
+-   Working on multiple modules simultaneously
 
 ### Workspaces (Go 1.18+)
 
@@ -557,9 +564,10 @@ $ git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https
 ### Module Proxies
 
 By default, Go uses the public module proxy at `https://proxy.golang.org`. This provides:
-- Fast downloads worldwide
-- Availability even if the original source disappears
-- Checksum database for security
+
+-   Fast downloads worldwide
+-   Availability even if the original source disappears
+-   Checksum database for security
 
 To disable (for private modules):
 
@@ -576,9 +584,10 @@ $ go mod vendor
 ```
 
 This creates a `vendor/` directory. Useful for:
-- Ensuring dependencies are always available
-- Working in restricted environments
-- Faster CI builds
+
+-   Ensuring dependencies are always available
+-   Working in restricted environments
+-   Faster CI builds
 
 Build with vendored dependencies:
 
@@ -589,42 +598,4 @@ $ go build -mod=vendor
 ## Package Organization Best Practices
 
 For project structure guidelines, see [golang-standards/project-layout](https://github.com/golang-standards/project-layout).
-
-## Common Pitfalls
-
-### Import Cycles
-
-Go doesn't allow import cycles:
-
-```text
-package A imports package B
-package B imports package A
-```
-
-**Solution**: Extract shared code into a third package that both can import.
-
-### Modifying go.mod Manually
-
-**Don't**: Edit `go.mod` by hand for most changes
-**Do**: Use `go get`, `go mod tidy`, and other commands
-
-**Exception**: `replace` directives and comments are fine to add manually.
-
-### Forgetting to Export
-
-```go
-package utils
-
-func helperfunc() {  // Unexported - can't use outside package
-    // ...
-}
-```
-
-**Solution**: Capitalize the first letter:
-
-```go
-func HelperFunc() {  // Exported - can use anywhere
-    // ...
-}
-```
 
