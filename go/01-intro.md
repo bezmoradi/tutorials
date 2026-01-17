@@ -1,14 +1,8 @@
 # Go > Introduction
 
-[Go](https://go.dev/) (also called Golang) is a statically typed, compiled programming language designed at Google in 2007 by Robert Griesemer, Rob Pike, and Ken Thompson.
+For decades, single-threaded programs benefited from steady increases in CPU clock speeds. Based on trends before 2003, industry projections anticipated 10 GHz processors by 2005. However, fundamental physical constraints prevented this trajectory from continuing! Around 2004-2005, chip manufacturers encountered what became known as the "power wall". Increasing clock frequency requires higher voltage, and power consumption scales cubically with voltage. This relationship produces heat that exceeds practical cooling capabilities. As an example, Intel cancelled its planned 10 GHz "Tejas" processor in 2004, and clock speeds plateaued around 4 GHz.
 
-For decades, single-threaded programs benefited from steady increases in CPU clock speeds. Based on trends before 2003, industry projections anticipated 10 GHz processors by 2005. However, fundamental physical constraints prevented this trajectory from continuing.
-
-Around 2004-2005, chip manufacturers encountered what became known as the "power wall." Increasing clock frequency requires higher voltage, and power consumption scales cubically with voltage. This relationship produces heat that exceeds practical cooling capabilities. Intel cancelled its planned 10 GHz "Tejas" processor in 2004, and clock speeds plateaued around 4 GHz.
-
-The industry responded by increasing core count rather than clock speed. AMD introduced multi-core processors in 2004, followed by Intel in 2005. In March 2005, Herb Sutter published an influential article titled "The Free Lunch Is Over," arguing that developers could no longer rely on hardware improvements for performance gains and would need to write concurrent code to utilize multiple cores.
-
-However, concurrent programming with existing languages remained complex and error-prone. In September 2007, Robert Griesemer, Rob Pike, and Ken Thompson began designing a new language at Google with the explicit goal of making concurrent programming simpler and safer. That language became Go.
+The industry responded by increasing **core count** rather than clock speed. AMD introduced multi-core processors in 2004, followed by Intel in 2005. In March 2005, Herb Sutter published an influential article titled "The Free Lunch Is Over", arguing that developers could no longer rely on hardware improvements for performance gains and would need to write concurrent code to utilize multiple cores. However, concurrent programming with existing languages remained complex and error-prone. In September 2007, Robert Griesemer, Rob Pike, and Ken Thompson began designing a new language at Google with the explicit goal of making concurrent programming simpler and safer. That language became [Go](https://go.dev/).
 
 ## Installing Go on macOS
 
@@ -598,4 +592,3 @@ $ go build -mod=vendor
 ## Package Organization Best Practices
 
 For project structure guidelines, see [golang-standards/project-layout](https://github.com/golang-standards/project-layout).
-
