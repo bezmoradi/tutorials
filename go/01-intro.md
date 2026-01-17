@@ -8,19 +8,19 @@ The industry responded by increasing **core count** rather than clock speed. AMD
 
 Before we start coding, let's install Go on macOS using Homebrew:
 
-```bash
+```sh
 brew install go
 ```
 
 Verify the installation by running:
 
-```bash
+```sh
 go version
 ```
 
 You should see output like: `go version go1.25.6 darwin/arm64` (your version may vary). To update Go to the latest version, we have:
 
-```bash
+```sh
 brew upgrade go
 ```
 
@@ -48,7 +48,7 @@ Before Go 1.11, Go used `$GOPATH` for managing dependencies. Since Go 1.11, Go u
 
 With these concepts in mind, now let's start creating our first program.
 
-```bash
+```sh
 mkdir hello-world && cd hello-world
 ```
 
@@ -72,8 +72,13 @@ go: go.mod file not found in current directory or any parent directory; see 'go 
 
 This error tells us we need to create a module. Let's do that:
 
-```bash
+```sh
 go mod init hello-world
+```
+
+We will have:
+
+```text
 go: creating new go.mod: module hello-world
 go: to add module requirements and sums:
 	go mod tidy
@@ -91,27 +96,27 @@ Understanding `go.mod` starts with its structure. The first line, `module hello-
 
 Now if we run `go build`, the program compiles successfully:
 
-```bash
+```sh
 go build
 ```
 
 This creates an executable file named `hello-world`. Run it:
 
-```bash
-$ ./hello-world
-Hello, World!
+```sh
+./hello-world
 ```
 
-The `go build` command requires `package main` to create an executable. Without it, Go doesn't know where the program should start. We can also get the output without first building the program:
+You'll see `Hello, World!`. The `go build` command requires `package main` to create an executable. Without it, Go doesn't know where the program should start. We can also get the output without first building the program:
 
-```bash
+```sh
 go run main.go
-Hello, World!
 ```
 
 **What just happened?** Go compiled your code to a temporary executable and ran it. For development, this is convenient. For production, you'll want to build a standalone executable.
 
-## Organizing Code: Multiple Files in One Package
+## Organizing Code
+
+### Multiple Files in One Package
 
 As your code grows, you'll want to split it across multiple files for better organization. All files in the same directory with the same `package` declaration belong to that package. Let's split our code into two files. `main.go` will be as follows:
 
@@ -137,7 +142,7 @@ func greet() {
 
 Since both files have `package main`, they're part of the same package. No imports needed between them as they automatically see each other's functions. Now let's run the code:
 
-```bash
+```sh
 # Option 1: Specify all files
 go run main.go greet.go
 
@@ -149,22 +154,18 @@ go build
 ./hello-world
 ```
 
-**Best practice**: Use `go run .` or `go build` instead of listing individual files. It's less error-prone and works regardless of how many files you have.
+Use `go run .` or `go build` instead of listing individual files. It's less error-prone and works regardless of how many files you have.
 
-## Organizing Code: Multiple Packages
+### Multiple Packages
 
-As projects grow, you'll want to organize code into multiple packages. Each package lives in its own subdirectory.
-
-**Why multiple packages**: They provide:
+As projects grow, you'll want to organize code into multiple packages. Each package lives in its own subdirectory. They provide:
 
 -   **Encapsulation**: Hide internal implementation details
 -   **Namespace management**: Avoid naming conflicts
 -   **Reusability**: Share code across different parts of your project
 -   **Team collaboration**: Different teams can own different packages
 
-### Package Structure
-
-**Best practice**: Name the directory the same as the package:
+It is best practice to name the directory the same as the package:
 
 ```text
 .
@@ -174,7 +175,7 @@ As projects grow, you'll want to organize code into multiple packages. Each pack
     └── utils.go
 ```
 
-**Example**: Create a `utils` package:
+As an example, let's create a `utils` package:
 
 ```go
 // utils/utils.go
@@ -193,12 +194,10 @@ func internalFunction() {
 }
 ```
 
-**Important**: In Go, capitalization determines visibility:
+As shown above, in Go capitalization determines visibility:
 
 -   **Uppercase first letter** = exported (public)
 -   **Lowercase first letter** = unexported (private to the package)
-
-### Importing Local Packages
 
 To use our `utils` package, import it using the module path from `go.mod`:
 
@@ -207,40 +206,36 @@ To use our `utils` package, import it using the module path from `go.mod`:
 package main
 
 import (
-	"hello-world/utils"  // module-name/package-path
+	"hello-world/utils"
 )
 
 func main() {
-	utils.ExternalFunction()  // Works!
+	utils.ExternalFunction()
 	// utils.internalFunction()  // Error: unexported
 }
 ```
 
-**Key insight**: The import path is `module-name/directory-path`, not a URL. Go looks in your module for the package.
-
-### Import Aliases
-
-If you have naming conflicts or want a shorter name, use an alias:
+The import path is `module-name/directory-path`, not a URL. Go looks in your module for the package. If you have naming conflicts or want a shorter name, use an alias:
 
 ```go
 package main
 
 import (
-	u "hello-world/utils"  // Alias 'u' for 'utils'
+	u "hello-world/utils"
 )
 
 func main() {
-	u.ExternalFunction()  // Use the alias
+	u.ExternalFunction()
 }
 ```
 
 ### Directory vs Package Names
 
-**Best practice**: Keep directory and package names the same. However, Go technically allows them to differ:
+As mentioned before, it's best practice to keep directory and package names the same. However, Go technically allows them to differ:
 
 ```go
-// helpers/some-file.go
-package utils  // Package name is 'utils'
+// helpers/helper.go
+package utils
 
 import "fmt"
 
@@ -252,34 +247,47 @@ func ExternalFunction() {
 When importing, use the **directory path**, but call functions using the **package name**:
 
 ```go
-// main.go
 package main
 
 import (
-	"hello-world/helpers"  // Import by directory path
+	"hello-world/helpers"
 )
 
 func main() {
-	utils.ExternalFunction()  // Use package name
+	utils.ExternalFunction()
 }
 ```
 
-**This is confusing, so avoid it.** Always name your directory the same as your package.
+When you save the program though, the default linting will create an alias for more clarity like so:
+
+```go
+package main
+
+import utils "hello-world/helpers"
+
+func main() {
+	utils.ExternalFunction()
+}
+```
+
+This is confusing, so **avoid** it. Always name your directory the same as your package.
 
 ## Working with Third-Party Packages
 
-Go makes it easy to use external packages. The Go module system automatically handles downloading and versioning.
+Go makes it easy to use external packages. The Go module system automatically handles downloading and versioning. When you import a package that's not in your module, You first need to download it by running the following command:
 
-### Adding Dependencies
+```sh
+go get github.com/Pallinder/go-randomdata
+```
 
-When you import a package that's not in your module, Go will automatically download it when you build or run:
+Now let's start importing into our program:
 
 ```go
-// main.go
 package main
 
 import (
 	"fmt"
+
 	"github.com/Pallinder/go-randomdata"
 )
 
@@ -288,110 +296,115 @@ func main() {
 }
 ```
 
-Run your code:
+Now you can run the program and see the output in the terminal. By convention Go groups imports with a blank line between standard library and external packages:
 
-```bash
-$ go run .
-go: downloading github.com/Pallinder/go-randomdata v1.2.0
-London  # Or another random city
+```go
+import (
+	"fmt"
+
+	"github.com/Pallinder/go-randomdata"
+)
 ```
-
-Go automatically:
-
-1. Downloaded the package
-2. Added it to `go.mod`
-3. Added checksums to `go.sum`
-4. Compiled and ran your code
-
-### Understanding go.mod and go.sum
 
 After adding a dependency, `go.mod` looks like:
 
 ```text
 module hello-world
 
-go 1.24
+go 1.25.6
 
 require github.com/Pallinder/go-randomdata v1.2.0 // indirect
 ```
 
-**go.mod** lists your dependencies and their versions.
-
-**go.sum** contains cryptographic checksums of dependency content. This ensures:
+**go.mod** lists your dependencies and their versions but **go.sum** contains cryptographic checksums of dependency content. This ensures:
 
 -   You get the exact same code every time
 -   No one can tamper with packages
 -   Reproducible builds
 
-**Note**: Unlike Node.js's `node_modules`, Go doesn't store dependencies in your project. They're cached globally in `$GOPATH/pkg/mod` (usually `~/go/pkg/mod`) and shared across all your projects.
+Unlike Node.js's `node_modules`, Go doesn't store dependencies in your project. They're cached globally in `$GOPATH/pkg/mod` (usually `~/go/pkg/mod`) and shared across all your projects.
 
-### Module Commands
+To download all the dependencies of a project, you can run the following command:
 
-**Adding/updating a dependency**:
-
-```bash
-$ go get github.com/Pallinder/go-randomdata@latest  # Latest version
-$ go get github.com/Pallinder/go-randomdata@v1.2.3  # Specific version
-$ go get github.com/Pallinder/go-randomdata@v1      # Latest v1.x.x
+```sh
+go mod download
 ```
 
-**Downloading all dependencies** (for teammates):
+For cleaning up unused dependencies, we have:
 
-```bash
-$ go mod download
+```sh
+go mod tidy
 ```
 
-**Cleaning up unused dependencies**:
+### Vendoring
 
-```bash
-$ go mod tidy
+You can vendor dependencies (copy them into your project):
+
+```sh
+go mod vendor
 ```
 
-**Important change (Go 1.17+)**: `go get` is primarily for adding/updating dependencies in `go.mod`. To install executable tools, use `go install`:
+This creates a `vendor/` directory which is useful for:
 
-```bash
-# Wrong (deprecated)
-$ go get github.com/some/tool
+-   Ensuring dependencies are always available
+-   Working in restricted environments
+-   Faster CI builds
 
-# Correct
-$ go install github.com/some/tool@latest
+If we run the vendor command for the above program, our folder structure will look like this:
+
+```text
+.
+├── go.mod
+├── go.sum
+├── main.go
+└── vendor
+    ├── github.com
+    │   └── Pallinder
+    │       └── go-randomdata
+    │           ├── CHANGELOG.md
+    │           ├── fullprofile.go
+    │           ├── jsondata.go
+    │           ├── LICENSE
+    │           ├── postalcodes.go
+    │           ├── random_data.go
+    │           └── README.md
+    └── modules.txt
 ```
 
-### Import Organization
+When you run `go mod vendor`, Go copies all required dependencies into a local `vendor/` directory. However, Go does not automatically use the `vendor/` directory for builds in module mode. By default, the Go toolchain still resolves dependencies from the module cache (`$GOPATH/pkg/mod`). So in order to build with vendored dependencies, we have:
 
-Go convention: group imports with a blank line between standard library and external packages:
-
-```go
-import (
-	"fmt"        // Standard library
-	"os"
-
-	"github.com/Pallinder/go-randomdata"  // External packages
-)
+```sh
+go build -mod=vendor
 ```
 
-Tools like `goimports` do this automatically.
+The `-mod=vendor` flag tells the Go toolchain explicitly, "Use the dependencies in the `vendor/` directory and do not resolve or download modules from anywhere else." In other words, you need to pass `-mod=vendor` to:
+
+-   Force Go to use the vendored copies instead of the module cache
+-   Prevent accidental network access during the build
+-   Ensure the build is fully reproducible from the checked-in dependencies
+
+Without `-mod=vendor`, the `vendor/` directory is essentially ignored during a normal module-aware build.
 
 ## Essential Go Tools
 
 Go comes with a powerful set of built-in tools. Here are the ones you'll use most:
 
-### go fmt - Format Code
+### Format Code
 
 `go fmt` automatically formats your code according to Go's style guide:
 
-```bash
-$ go fmt ./...  # Format all files in current directory and subdirectories
+```sh
+go fmt ./...
 ```
 
-**Best practice**: Run this before every commit. Better yet, configure your editor to run it on save.
+Run this before every commit. Better yet, configure your editor to run it on save.
 
-### go vet - Static Analysis
+### Static Analysis
 
 `go vet` examines code for common mistakes:
 
-```bash
-$ go vet ./...
+```sh
+go vet ./...
 ```
 
 It catches issues like:
@@ -401,156 +414,31 @@ It catches issues like:
 -   Misuse of sync.Mutex
 -   And many more
 
-### go mod tidy - Clean Dependencies
+Let's see that in action:
+
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	fmt.Printf("Hello: %d\n", "World!")
+}
+```
+
+If we run the above command, we will get `./main.go:8:21: fmt.Printf format %d has arg "World!" of wrong type string`.
+
+### Clean Dependencies
 
 Removes unused dependencies and adds missing ones:
 
-```bash
-$ go mod tidy
+```sh
+go mod tidy
 ```
 
 Run this regularly to keep `go.mod` clean.
-
-### go build - Compile
-
-Compile your program:
-
-```bash
-$ go build                    # Build for current platform
-$ go build -o myapp          # Specify output name
-$ GOOS=linux go build        # Cross-compile for Linux
-$ GOOS=windows go build      # Cross-compile for Windows
-```
-
-### goimports - Advanced Formatting
-
-`goimports` does everything `go fmt` does, plus manages imports automatically:
-
-```bash
-$ go install golang.org/x/tools/cmd/goimports@latest
-$ goimports -w .
-```
-
-**Highly recommended**: Configure your editor to run `goimports` on save instead of `go fmt`.
-
-## Advanced Module Concepts
-
-### Semantic Versioning
-
-Go modules use semantic versioning (semver):
-
-```text
-v1.2.3
-│ │ └─ Patch: Bug fixes (backward compatible)
-│ └─── Minor: New features (backward compatible)
-└───── Major: Breaking changes (NOT backward compatible)
-```
-
-**Key rule**: Major versions v2+ require a suffix in the module path:
-
-```go
-module github.com/user/project/v2  // Major version 2
-
-import "github.com/user/project/v2/pkg"
-```
-
-This allows different major versions to coexist in the same project.
-
-### The replace Directive
-
-The `replace` directive lets you use a local copy of a dependency:
-
-```go
-// go.mod
-module hello-world
-
-go 1.24
-
-require github.com/someone/package v1.2.3
-
-replace github.com/someone/package => ../local-copy
-```
-
-**Use cases**:
-
--   Testing local changes before publishing
--   Using a fork temporarily
--   Working on multiple modules simultaneously
-
-### Workspaces (Go 1.18+)
-
-Workspaces let you work on multiple modules simultaneously:
-
-```bash
-$ go work init ./module1 ./module2
-$ go work use ./module3
-```
-
-Creates a `go.work` file:
-
-```text
-go 1.24
-
-use (
-    ./module1
-    ./module2
-    ./module3
-)
-```
-
-**When to use**: When developing multiple related modules locally (e.g., a main application and a library it uses).
-
-**Important**: Don't commit `go.work` to version control—it's for local development only.
-
-### Private Modules
-
-To use private repositories (GitHub, GitLab, Bitbucket):
-
-```bash
-$ export GOPRIVATE=github.com/yourcompany/*
-```
-
-Add to `~/.bashrc` or `~/.zshrc` for persistence.
-
-For authentication:
-
-```bash
-$ git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-```
-
-### Module Proxies
-
-By default, Go uses the public module proxy at `https://proxy.golang.org`. This provides:
-
--   Fast downloads worldwide
--   Availability even if the original source disappears
--   Checksum database for security
-
-To disable (for private modules):
-
-```bash
-$ export GOPRIVATE=github.com/yourcompany/*
-```
-
-### Vendoring
-
-You can vendor dependencies (copy them into your project):
-
-```bash
-$ go mod vendor
-```
-
-This creates a `vendor/` directory. Useful for:
-
--   Ensuring dependencies are always available
--   Working in restricted environments
--   Faster CI builds
-
-Build with vendored dependencies:
-
-```bash
-$ go build -mod=vendor
-```
 
 ## Package Organization Best Practices
 

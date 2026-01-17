@@ -195,4 +195,26 @@ replace github.com/bezmoradi/lib => ../lib
 
 require github.com/bezmoradi/lib v0.0.0-00010101000000-000000000000 // indirect
 ```
-By using the `replace` keyword, we are asking the Go compiler to replace the real path of `github.com/bezmoradi/lib` with `../lib` meaning going one directory up then use whatever found inside the `lib` folder. Finally, we have to run `go get github.com/bezmoradi/lib` which results in adding the last line. From now on, we can simply use the `lib` project inside the `app`. 
+
+By using the `replace` keyword, we are asking the Go compiler to replace the real path of `github.com/bezmoradi/lib` with `../lib` meaning going one directory up then use whatever found inside the `lib` folder. Finally, we have to run `go get github.com/bezmoradi/lib` which results in adding the last line. From now on, we can simply use the `lib` project inside the `app`.
+
+### The replace Directive
+
+The `replace` directive lets you use a local copy of a dependency:
+
+```go
+// go.mod
+module hello-world
+
+go 1.24
+
+require github.com/someone/package v1.2.3
+
+replace github.com/someone/package => ../local-copy
+```
+
+**Use cases**:
+
+-   Testing local changes before publishing
+-   Using a fork temporarily
+-   Working on multiple modules simultaneously
