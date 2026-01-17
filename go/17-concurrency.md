@@ -1,17 +1,22 @@
 # Go > Concurrency
 
--   Before looking into how concurrency works in Go, it's worth talking a little bit about dual core CPUs. In 2005, Intel released its first generation of dual core CPUs. Then in 2007, Google started working on Go and the language was officially announced to the public in March 2012, marking its initial release. Go, with its strong support for concurrency, could take advantage of multi-core architectures to efficiently handle parallel processing.
+Before looking into how concurrency works in Go, it's worth talking a little bit about dual-core CPUs. In 2005, Intel released its first generation of dual-core CPUs. Then in 2007, Google started working on Go and the language was officially announced to the public in November 2009, with version 1.0 released in March 2012. Go, with its strong support for concurrency, was designed from the ground up to take advantage of multi-core architectures to efficiently handle parallel processing.
 
 ## Concurrency vs. Parallelism
 
--   Concurrency is about managing multiple tasks and making progress on them concurrently. It doesn't necessarily mean executing them simultaneously. It deals with the structure of the program and how tasks are organized. In a concurrent system, tasks can start, run, and complete in overlapping time periods, but they might not be actively executing at the same time.
--   Parallelism, on the other hand, involves actually executing multiple tasks simultaneously. It's about doing multiple things at the same time by leveraging multiple processors or cores. Parallelism is a way to achieve concurrency by physically running different tasks simultaneously
--   So if you have written a Go program that can handle different tasks concurrently but your code is run on a single core machine, no parallelism would happen!
--   Concurrent programming in many environments is made difficult by the subtleties required to implement correct access to shared variables. Go encourages a different approach in which shared values are passed around on channels and, in fact, never actively shared by separate threads of execution. Only one goroutine has access to the value at any given time. Data races cannot occur, by design. To encourage this way of thinking we have reduced it to a slogan "Do not communicate by sharing memory; instead, share memory by communicating".
+**Concurrency** is about managing multiple tasks and making progress on them concurrently. It doesn't necessarily mean executing them simultaneously. It deals with the structure of the program and how tasks are organized. In a concurrent system, tasks can start, run, and complete in overlapping time periods, but they might not be actively executing at the same time.
+
+**Parallelism**, on the other hand, involves actually executing multiple tasks simultaneously. It's about doing multiple things at the same time by leveraging multiple processors or cores. Parallelism is a way to achieve concurrency by physically running different tasks simultaneously.
+
+**Key insight**: If you have written a Go program that can handle different tasks concurrently but your code runs on a single-core machine, no parallelism would happen—tasks would still run concurrently through time-slicing, but not in parallel.
+
+Concurrent programming in many environments is made difficult by the subtleties required to implement correct access to shared variables. Go encourages a different approach in which shared values are passed around on channels and, in fact, never actively shared by separate threads of execution. Only one goroutine has access to the value at any given time. Data races cannot occur, by design. To encourage this way of thinking we have reduced it to a slogan: **"Do not communicate by sharing memory; instead, share memory by communicating."**
 
 ## What Is A Goroutine?
 
--   A goroutine is a lightweight lightweight threads managed by the Go runtime, and they allow your program to run functions concurrently. Think of them as different tasks running simultaneously within a program, letting you do stuff like handling multiple requests or performing various operations without waiting for each one to finish before starting the next.
+A goroutine is a lightweight thread managed by the Go runtime, and goroutines allow your program to run functions concurrently. Think of them as different tasks running simultaneously within a program, letting you handle multiple requests or perform various operations without waiting for each one to finish before starting the next.
+
+**Why goroutines are lightweight**: Unlike OS threads which typically require 1-2 MB of stack space, goroutines start with only 2 KB and can grow as needed. This means you can easily run thousands or even millions of goroutines in a single program, making Go exceptionally efficient for concurrent workloads.
 
 ```go
 package main
@@ -26,11 +31,11 @@ func main() {
 }
 ```
 
--   At the very beginning of the `main` function, there won't be any additional goroutines created by your code, so typically, you'll see only one goroutine, which is the main goroutine running the `main` function itself.
+At the very beginning of the `main` function, there won't be any additional goroutines created by your code, so typically, you'll see only one goroutine, which is the main goroutine running the `main` function itself.
 
-## An Intro into `WaitGroup`
+## An Introduction to `WaitGroup`
 
--   `WaitGroup` from the `sync` package gives us the ability to create some goroutines and wait for them to be completed.
+`WaitGroup` from the `sync` package gives us the ability to create goroutines and wait for them to complete.
 
 ```go
 package main
@@ -62,16 +67,21 @@ func main() {
 }
 ```
 
--   In the above program, we have created an instance of `WaitGroup` on this line:
+In the above program, we have created an instance of `WaitGroup` on this line:
 
 ```go
 var wg sync.WaitGroup
 ```
 
--   It's obvious that it's defines at the package level simply because we need to have access to it inside different functions. The way it works is that at the end of the `main` function we call `wg.Wait()` meaning the program must wait until all goroutines are done.
--   So in order to turn some functions calls to goroutines, we prepend them with the `go` keyword and as we at the moment we have two goroutines that we need to wait for, at the very beginning of our `main` function we call `wg.Add(2)` which simply means that Go needs to wait for 2 goroutines to get completed.
--   As a last step, inside those functions we need to call `wg.Done()` to give a hint to the `WaitGroup` that the current function is done.
--   The `runtime` package includes some useful functions to get to know what's happening behind the scenes and one them is `NumGoroutine()`:
+It's defined at the package level simply because we need to have access to it inside different functions. The way it works is that at the end of the `main` function we call `wg.Wait()` meaning the program must wait until all goroutines are done.
+
+To turn function calls into goroutines, we prepend them with the `go` keyword. Since we have two goroutines that we need to wait for, at the very beginning of our `main` function we call `wg.Add(2)`, which tells Go to wait for 2 goroutines to complete.
+
+As a last step, inside those functions we need to call `wg.Done()` to signal to the `WaitGroup` that the current function is done.
+
+**Best practice**: Always call `wg.Add()` before launching the goroutine to avoid race conditions. Also, consider using `defer wg.Done()` as the first line in your goroutine to ensure it's always called even if the function panics.
+
+The `runtime` package includes some useful functions to understand what's happening behind the scenes, and one of them is `NumGoroutine()`:
 
 ```go
 
@@ -87,8 +97,9 @@ func main() {
 }
 ```
 
--   If we execute our code, the `NumGoroutine` function prints 3 because we have a goroutine for the `main` function, one for the `sayHi` function, and one for the `sayBye` function.
--   The place we call the `NumGoroutine` determines what the output will be! To experiment, let's change the above code as follows:
+If we execute our code, the `NumGoroutine` function prints 3 because we have a goroutine for the `main` function, one for the `sayHi` function, and one for the `sayBye` function.
+
+The place we call `NumGoroutine` determines what the output will be. To experiment, let's change the above code as follows:
 
 ```go
 func main() {
@@ -103,7 +114,7 @@ func main() {
 }
 ```
 
--   As we have created one goroutine for the `main` function and the `NumGoroutine` is called right before other goroutines, it outputs 1. As another experiment, let's update the code once more by placing `NumGoroutine` call all the way to the bottom of the `main` function:
+Since we have one goroutine for the `main` function and `NumGoroutine` is called before launching the other goroutines, it outputs 1. As another experiment, let's update the code once more by placing the `NumGoroutine` call all the way to the bottom of the `main` function:
 
 ```go
 func main() {
@@ -118,11 +129,13 @@ func main() {
 }
 ```
 
--   It prints 1 because `wg.Wait()` waits for all custom-made goroutines then the next line is executed and as we are still inside the `main` function and each go program has at least one goroutine for that function, it outputs 1.
+It prints 1 because `wg.Wait()` waits for all custom-made goroutines to complete, then the next line is executed. Since we are still inside the `main` function and each Go program has at least one goroutine for that function, it outputs 1.
 
 ## Channels
 
--   Channels are blocking. In the following program, we are creating a channel called `c` which can hold any value of type `int` then in the next line are are adding `78` to our channel and this is the line where our channel blocks.
+Channels are the pipes that connect concurrent goroutines. You can send values into channels from one goroutine and receive those values in another goroutine.
+
+**Key concept**: Unbuffered channels are blocking—they require both a sender and receiver to be ready simultaneously. In the following program, we are creating a channel called `c` which can hold any value of type `int`, then in the next line we are adding `78` to our channel and this is the line where our channel blocks.
 
 ```go
 package main
@@ -138,7 +151,7 @@ func main() {
 }
 ```
 
--   If we try to run the above code we will get:
+If we try to run the above code we will get:
 
 ```text
 fatal error: all goroutines are asleep - deadlock!
@@ -149,8 +162,15 @@ main.main()
 exit status 2
 ```
 
--   This error occurs because you're trying to send a value into a channel but there's no goroutine (concurrent function) ready to receive it. In Go, sending and receiving from a channel can cause the program to wait until there's another goroutine ready to perform the complementary operation. In this case, when you create a channel with `c := make(chan int)`, it's an unbuffered channel, meaning it expects both a sender and a receiver to be ready simultaneously for communication. When you execute `c <- 78`, the main goroutine tries to send 78 into the channel, but since there's no other goroutine ready to receive from it, the program deadlocks. To fix this issue, you can do one of the following:
--   **Use Goroutines**: Create a separate goroutine to send the value into the channel while the main goroutine is waiting to receive it.
+This error occurs because you're trying to send a value into a channel but there's no goroutine (concurrent function) ready to receive it.
+
+**Why this happens**: When you create a channel with `c := make(chan int)`, it's an **unbuffered channel**, meaning it requires both a sender and a receiver to be ready simultaneously for communication. This is a synchronization point—the sender blocks until a receiver is ready, and the receiver blocks until a sender is ready.
+
+When you execute `c <- 78`, the main goroutine tries to send 78 into the channel, but since there's no other goroutine ready to receive from it, the program deadlocks. All goroutines are blocked waiting for something that will never happen.
+
+To fix this issue, you have two options:
+
+**Option 1: Use Goroutines** - Create a separate goroutine to send the value into the channel while the main goroutine is waiting to receive it.
 
 ```go
 package main
@@ -168,7 +188,7 @@ func main() {
 }
 ```
 
--   **Buffered Channel**: Create a buffered channel that can hold one value without requiring the sender and receiver to be ready simultaneously.
+**Option 2: Buffered Channel** - Create a buffered channel that can hold one value without requiring the sender and receiver to be ready simultaneously.
 
 ```go
 package main
@@ -176,16 +196,19 @@ package main
 import "fmt"
 
 func main() {
-	c := make(chan int, 1)
+	c := make(chan int, 1) // Buffer size of 1
 
-	c <- 78
+	c <- 78 // Doesn't block because buffer has space
 
-	fmt.Println(<-c)
+	fmt.Println(<-c) // Receives from buffer
 }
 ```
 
--   Both of these solutions should prevent the deadlock and allow your program to execute without errors.
--   Channel can be made to specifically send values, receive values, or both.
+Both of these solutions prevent the deadlock. The first uses concurrency (goroutines), while the second uses buffering to decouple sending and receiving.
+
+### Channel Directionality
+
+Channels can be made to specifically send values, receive values, or both. This adds type safety and makes your intent clearer:
 
 ```go
 package main
@@ -203,15 +226,15 @@ func main() {
 }
 ```
 
--   This outputs:
+This outputs:
 
 ```text
-chan int
-chan<- int
-<-chan int
+chan int       // bidirectional
+chan<- int     // send-only
+<-chan int     // receive-only
 ```
 
--   A more practical example of sending/receiving channels is as follows:
+A more practical example of send-only and receive-only channels is as follows:
 
 ```go
 package main
@@ -234,7 +257,7 @@ func main() {
 }
 ```
 
--   As channels are reference type, the same copy of `c` is sent to both functions. If we run the above program, it outputs:
+Since channels are reference types, the same channel `c` is passed to both functions. If we run the above program, it outputs:
 
 ```text
 fatal error: all goroutines are asleep - deadlock!
@@ -247,8 +270,9 @@ main.main()
 exit status 2
 ```
 
--   The reason being is due to the synchronization problem between the sender and receiver goroutines. When the sender function attempts to send a value to the channel `c <- 7`, it blocks because there's no other goroutine ready to receive the value from the channel at that moment. Similarly, when the receiver function attempts to receive a value from the channel `fmt.Println(<-c)`, it also blocks because there's no sender available to send the value.
--   To fix this, you need to run these functions concurrently using goroutines to avoid deadlocks. You can use the `go` keyword to launch these functions as goroutines:
+The reason is a synchronization problem between the sender and receiver. When the `sender` function attempts to send a value to the channel `c <- 7`, it blocks because there's no other goroutine ready to receive the value from the channel at that moment. The program never gets to the `receiver` call because it's stuck on the `sender` call.
+
+To fix this, you need to run these functions concurrently using goroutines. Use the `go` keyword to launch these functions as goroutines:
 
 ```go
 package main
@@ -271,11 +295,27 @@ func main() {
 }
 ```
 
--   It fixed the first issue; now we have another one though! Nothing is outputted in the terminal. The reason you don't see any output is that the `main` function finishes execution before the goroutines `sender` and `receiver` get a chance to execute due to the concurrent nature of goroutines. In Go, the `main` function **doesn't wait** for goroutines to finish by default. To fix that, we can either use `WaitGroup` of remove the `go` keyword behind the `receiver`. As the `receiver` function runs in the `main` goroutine, waits until a value is available on the channel. If a value is already there, it proceeds; otherwise, it blocks until a value is sent on the channel.
+This fixed the deadlock, but now we have another issue—nothing is outputted in the terminal. The reason you don't see any output is that the `main` function finishes execution before the goroutines `sender` and `receiver` get a chance to execute. In Go, the `main` function **doesn't wait** for goroutines to finish by default.
+
+To fix this, we have two options:
+
+1. **Use `WaitGroup`** to wait for both goroutines to complete
+2. **Remove the `go` keyword from `receiver`** - The `receiver` function will then run in the `main` goroutine and block until a value is available on the channel. If a value is already sent by the `sender` goroutine, it proceeds; otherwise, it blocks until a value is sent.
+
+The second option is simpler for this example:
+
+```go
+func main() {
+	c := make(chan int)
+
+	go sender(c)  // Runs concurrently
+	receiver(c)   // Blocks main until it receives a value
+}
+```
 
 ## How to Use Channels with Range
 
--   We can loop through a channel's value using a loop:
+We can loop through a channel's values using a `range` loop. This is useful when you want to receive multiple values from a channel:
 
 ```go
 package main
@@ -297,11 +337,11 @@ func main() {
 		fmt.Println(v)
 	}
 
-	fmt.Println("program existed successfully")
+	fmt.Println("program exited successfully")
 }
 ```
 
--   Technically, the `for` loop should iterate over all channel values until it's closed. Let's see what we get in the output:
+The `for range` loop iterates over all channel values until the channel is closed. Let's see what we get in the output:
 
 ```text
 0
@@ -322,7 +362,7 @@ main.main()
 exit status 2
 ```
 
--   In the above code, the `range` starts looping over the channel until the it's closed and the main problem here is that we have not explicitly asked our channel to get closed that'w why `range` is asking for more values whereas there is no more values and we get an error. To fix that, we need to close our channel when we are done:
+In the above code, the `range` loop iterates over the channel until it's closed. The problem here is that we have not explicitly closed our channel, that's why `range` keeps waiting for more values even though there are no more values to send, and we get a deadlock error. To fix this, we need to close our channel when we are done sending values:
 
 ```go
 go func() {
@@ -334,7 +374,7 @@ go func() {
 }()
 ```
 
--   Now it outputs:
+Now it outputs:
 
 ```text
 0
@@ -352,9 +392,12 @@ program existed successfully
 
 ## How to Use Channels with `select` Statement
 
--   The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While switch works with multiple expressions to determine the flow of control, select deals with communication operations on channels. In short:
-    -   A select statement allows you to wait on multiple channel operations simultaneously.
-    -   If none of the channels are ready, the select statement blocks until at least one of the channels is ready to proceed.
+The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While `switch` works with multiple expressions to determine the flow of control, `select` deals with communication operations on channels.
+
+**Key characteristics**:
+- A `select` statement allows you to wait on multiple channel operations simultaneously
+- If none of the channels are ready, the `select` statement blocks until at least one of the channels is ready to proceed
+- If multiple channels are ready, Go randomly selects one (this prevents starvation)
 
 ```go
 package main
@@ -403,12 +446,16 @@ func main() {
 }
 ```
 
--   In the above program, The `select` statement listens to three channels: `even`, `odd`, and `quit`. When any of these channels are ready to be read from, the corresponding case inside the select will execute. If a value is received from the `even` channel, it prints it as an even number. If a value is received from the `odd` channel, it prints it as an odd number. And ff a value is received from the `quit` channel, it prints "Done" and exits the show function.
--   The `select` statement doesn't operate on values like a switch statement does. Instead, it chooses which channel operation to proceed with based on the readiness of the channels involved. It's a powerful construct for handling concurrent communication between goroutines.
+In the above program, the `select` statement listens to three channels: `even`, `odd`, and `quit`. When any of these channels are ready to be read from, the corresponding case inside the `select` will execute:
+- If a value is received from the `even` channel, it prints it as an even number
+- If a value is received from the `odd` channel, it prints it as an odd number
+- If a value is received from the `quit` channel, it prints "Done" and exits the `show` function
+
+**Important**: The `select` statement doesn't operate on values like a `switch` statement does. Instead, it chooses which channel operation to proceed with based on the readiness of the channels involved. It's a powerful construct for handling concurrent communication between goroutines.
 
 ## Another Example of Channels in Go
 
--   As function are called one after the other in order, if we have a long running task, it will block the flow of execution of other functions that come next:
+Since functions are called one after the other in sequence, if we have a long-running task, it will block the execution of other functions that come next:
 
 ```go
 package main
@@ -435,8 +482,9 @@ func slowGreet(phrase string) {
 }
 ```
 
--   We won't be able to see the returned value of the last `greet()` invocation right away because the previous function (`slowGreet()`) would take a while to complete
--   In order to tackle this issue and run all functions in parallel, we need to use the `go` keyword as follows:
+We won't be able to see the output of the last `greet()` invocation right away because the previous function (`slowGreet()`) takes 3 seconds to complete.
+
+To tackle this issue and run all functions concurrently, we need to use the `go` keyword as follows:
 
 ```go
 func main() {
@@ -447,10 +495,13 @@ func main() {
 }
 ```
 
--   But if we run the program now, we won't see any output in the terminal and the program exists right away! Technically, by adding the `go` keyword, you tell Go that you want to run those functions as Goroutines which simply means they will be run but this time in parallel instead one after the other
--   The idea behind running a function as a Goroutine is that it will be run in a non-blocking way; so the next function after can immediately be invoked
--   The reason that the program exits right away is that the `main()` function does not wait for Goroutines to get completed; in other words, what `main()` function does is that it dispatches the Goroutines and does not wait anymore
--   The solution to this problem is Go Channels. Simply put, a channel is a value that can be used as a communication channel when working with goroutines
+But if we run the program now, we won't see any output in the terminal and the program exits right away.
+
+**Why this happens**: By adding the `go` keyword, you tell Go that you want to run those functions as goroutines, which means they will run concurrently instead of one after the other. The idea behind running a function as a goroutine is that it will run in a non-blocking way, so the next function can immediately be invoked.
+
+The reason the program exits right away is that the `main()` function does not wait for goroutines to complete. The `main()` function dispatches the goroutines and immediately continues to the end of the function, at which point the program exits.
+
+The solution to this problem is to use channels or `WaitGroup` to synchronize. Simply put, a channel is a value that can be used as a communication mechanism when working with goroutines:
 
 ```go
 func main() {
@@ -467,16 +518,19 @@ func slowGreet(phrase string, doneChannel chan bool) {
 }
 ```
 
--   This channel simply lets Go know whether the function process is done or not
--   In fact, the `slowGreet()` function when completes, sends a flag though its channel to the place where we started the goroutine which is the following line:
+This channel lets Go know whether the function process is done or not.
+
+When the `slowGreet()` function completes, it sends a flag through its channel to the place where we started the goroutine, which is the following line:
 
 ```go
 go slowGreet("How ... are ... you ... ?")
 ```
 
--   Go will exit only after some data come out the channel on this line `<-done`
--   We can also place the returned value of the channel inside `fmt.Println(<-done)` or leave it as before
--   We can use a channel for completion of multiple goroutines. To do that, we have to make sure the channel is created before any goroutine and also we have to make sure that all goroutines accept such a channel
+Go will exit only after data comes out of the channel on this line `<-done`. This is a **blocking receive**—the program waits at this line until the channel receives a value.
+
+We can also place the received value inside `fmt.Println(<-done)` or simply use `<-done` to wait without printing.
+
+We can use a single channel for multiple goroutines. To do that, we must ensure the channel is created before launching any goroutine and that all goroutines accept the channel as a parameter:
 
 ```go
 package main
@@ -512,14 +566,15 @@ func greet(phrase string, doneChannel chan bool) {
 
 ```
 
--   Keep in mind that we can use the same channel for multiple goroutines because our channel is a communication device and is designed in a way that can receive multiple values
--   However, if we run the above program, we will get a strange result:
+Keep in mind that we can use the same channel for multiple goroutines because channels are designed to be communication devices that can receive multiple values.
+
+However, if we run the above program, we will get unpredictable results:
 
 ```text
 Hi Last call
 ```
 
--   Or in another execution we get:
+Or in another execution we get:
 
 ```text
 Hi Last call
@@ -527,7 +582,7 @@ Hi First call
 Hi Second call
 ```
 
--   The reason why we are getting this unpredictable result is that we are facing race condition in our program where the function that completes first, ends the execution of the program. To tackle this issue we can:
+The reason we're getting this unpredictable result is that **we're only waiting for one channel value** even though we launched four goroutines. The program exits as soon as the first goroutine sends its value to the channel. To tackle this issue, we need to wait for all four goroutines:
 
 ```go
 func main() {
@@ -545,7 +600,7 @@ func main() {
 }
 ```
 
--   In the output we have:
+In the output we have:
 
 ```text
 Hi Last call
@@ -554,9 +609,11 @@ Hi First call
 Hi Delayed call
 ```
 
--   As seen above, the order of the output mismatches the order of function calls and the reason is that all those goroutines are executed in parallel and the output matches with the time those function invocations are done; in other words, there is possibility that the `greet()` function call with `Last call` finished way sooner than the function call with the `First call` input that's why that result set will be shown first
--   As a rule of thumb, if you use the same channel for multiple goroutines, you must wait for as many flags as you have goroutines
--   As this way of handling goroutines is not scalable and also error-prone (because you might forget to match the number of flags with the number of goroutines), there is an alternative approach as follows:
+**Note on output order**: The order of the output doesn't match the order of function calls. This is because all those goroutines execute concurrently, and the output reflects the completion order. The `greet()` function call with `Last call` might finish way sooner than the one with `First call` because goroutines are scheduled independently.
+
+**Rule of thumb**: If you use the same channel for multiple goroutines, you must wait for as many values as you have goroutines.
+
+**Problem with this approach**: This way of handling goroutines is not scalable and is error-prone because you might forget to match the number of receives with the number of goroutines. There are better alternatives:
 
 ```go
 func main() {
@@ -580,7 +637,7 @@ func main() {
 }
 ```
 
--   The above approach is better in comparison with the previous one, it is not ideal though that's why Go provides you with another simpler approach:
+The above approach is better than manually writing multiple `<-done` statements, but it's still not ideal. **The recommended approach is to use `WaitGroup`** (shown earlier in this tutorial) or to use a `for range` loop over the channel:
 
 ```go
 func main() {
@@ -596,7 +653,7 @@ func main() {
 }
 ```
 
--   As shown above, we can directly loop though the channel which waits for all channels to complete but in the output we will get an error
+As shown above, we can loop through the channel, but in the output we will get an error:
 
 ```text
 Hi First call
@@ -615,7 +672,9 @@ main.main()
 exit status 2
 ```
 
--   We get this error because Go does not know when the channel is out of values; in other words, we loop through all values and wait for new values to be emitted but eventually there will be no value left and that is the reason we are getting this error
+We get this error because Go does not know when the channel is out of values. The `for range` loop keeps waiting for new values to be sent, but eventually there are no more values, resulting in a deadlock.
+
+**Antipattern - Don't do this**: Closing the channel in the function that finishes last:
 
 ```go
 func slowGreet(phrase string, doneChannel chan bool) {
@@ -623,28 +682,67 @@ func slowGreet(phrase string, doneChannel chan bool) {
 	fmt.Println("Hi", phrase)
 
 	doneChannel <- true
-	close(doneChannel)
+	close(doneChannel) // BAD: Assumes this finishes last
 }
 ```
 
--   Basically, by calling `close(doneChannel)` we would explicitly close a channel when we are done BUT when need to decided which function has the most delay and close the channel inside that function; This solution only works if you do know which operation takes longest and after that this channel is not needed anymore
--   One more thing is that if we do not care about the output of the channel, we can change the `for` loop inside the `main()` function as follows:
+**Why this is bad**: This only works if you know for certain which operation takes longest, and it's fragile—any change to timing breaks the code.
+
+**Better approach**: Use `WaitGroup` instead:
 
 ```go
-for range done {
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var wg sync.WaitGroup
+
+func main() {
+	wg.Add(4)
+
+	go greet("First call")
+	go greet("Second call")
+	go slowGreet("Delayed call")
+	go greet("Last call")
+
+	wg.Wait() // Clean, clear, correct
+}
+
+func slowGreet(phrase string) {
+	defer wg.Done()
+	time.Sleep(3 * time.Second)
+	fmt.Println("Hi", phrase)
+}
+
+func greet(phrase string) {
+	defer wg.Done()
+	fmt.Println("Hi", phrase)
 }
 ```
+
+This is the idiomatic Go way to wait for multiple goroutines to complete.
 
 ## Race Condition & Mutex
 
--   A mutex, short for "mutual exclusion," is a synchronization mechanism used in concurrent programming to ensure that only one thread or goroutine can access a shared resource or critical section at a time. The purpose of a mutex is to prevent data races and maintain the consistency of shared data. Here's a basic explanation of how a mutex works:
+A mutex, short for "mutual exclusion," is a synchronization mechanism used in concurrent programming to ensure that only one thread or goroutine can access a shared resource or critical section at a time. The purpose of a mutex is to prevent data races and maintain the consistency of shared data.
 
-    -   **Locking**: When a goroutine wants to access a critical section or modify a shared resource, it must acquire the mutex by calling the Lock method. If the mutex is currently held by another goroutine, the requesting goroutine will be blocked until the mutex is released by the current holder.
-    -   **Critical Section**: Once a goroutine has acquired the mutex, it can safely access the shared resource or execute a critical section of code. The mutex ensures that only one goroutine is in this critical section at any given time.
-    -   **Unlocking**: After completing the critical section, the goroutine releases the mutex by calling the Unlock method. This allows other goroutines waiting for the mutex to acquire it and proceed.
+### How a Mutex Works
 
--   In the context of Go, a race condition occurs when two or more goroutines (concurrent threads of execution in Go) access shared data concurrently, and at least one of them modifies the data. The behavior of the program becomes unpredictable because the outcome depends on the timing and order of execution of the goroutines.
--   Race conditions can lead to unexpected and erroneous behavior in a program. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program. Here's a simple example of a race condition in Go:
+**Locking**: When a goroutine wants to access a critical section or modify a shared resource, it must acquire the mutex by calling the Lock method. If the mutex is currently held by another goroutine, the requesting goroutine will be blocked until the mutex is released by the current holder.
+
+**Critical Section**: Once a goroutine has acquired the mutex, it can safely access the shared resource or execute a critical section of code. The mutex ensures that only one goroutine is in this critical section at any given time.
+
+**Unlocking**: After completing the critical section, the goroutine releases the mutex by calling the Unlock method. This allows other goroutines waiting for the mutex to acquire it and proceed.
+
+### Understanding Race Conditions
+
+In the context of Go, a race condition occurs when two or more goroutines access shared data concurrently, and at least one of them modifies the data. The behavior of the program becomes unpredictable because the outcome depends on the timing and order of execution of the goroutines.
+
+Race conditions can lead to unexpected and erroneous behavior in a program. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program. Here's a simple example of a race condition in Go:
 
 ```go
 package main
@@ -677,8 +775,9 @@ func main() {
 }
 ```
 
--   In the first run we will get `Final Counter: 1395` and in the second one something unpredictable like `Final Counter: 1395`. In this example, two goroutines are concurrently incrementing a shared counter variable. Since there is no synchronization mechanism (like locks or channels), a race condition occurs, and the final value of the counter is unpredictable.
--   To address this issue and avoid race conditions, you should use synchronization mechanisms like a mutex. Here's an example using a mutex:
+In the first run we might get `Final Counter: 1523`, in the second run `Final Counter: 1891`, and in the third run `Final Counter: 1645`. The value is unpredictable because two goroutines are concurrently incrementing a shared counter variable. Since there is no synchronization mechanism (like locks or channels), a race condition occurs, and the final value of the counter changes with each run.
+
+To address this issue and avoid race conditions, you should use synchronization mechanisms like a mutex. Here's an example using a mutex:
 
 ```go
 package main
@@ -714,8 +813,9 @@ func main() {
 }
 ```
 
--   In this modified version, `mutex` is used to ensure that only one goroutine can modify the `counter` variable at a time. The `Lock` and `Unlock` functions of the `mutex` guarantee the atomicity of the critical section, preventing race conditions and ensuring that the final value of counter is as expected. Now we will get `Final Counter: 2000` in the output without any race condition.
--   As an experiment, let's place the `mutex` variable inside the `increment` function:
+In this modified version, `mutex` is used to ensure that only one goroutine can modify the `counter` variable at a time. The `Lock` and `Unlock` methods of the `mutex` guarantee the atomicity of the critical section, preventing race conditions and ensuring that the final value of counter is as expected. Now we will get `Final Counter: 2000` in the output without any race condition.
+
+As an experiment, let's place the `mutex` variable inside the `increment` function:
 
 ```go
 func increment() {
@@ -730,15 +830,19 @@ func increment() {
 }
 ```
 
--   If we run the program, the race condition scenario is back into play! The reason being is that by calling the `increment` function two times, we are creating two variables called `mutex` for each that's why the locking and unlocking functionalities have no effect on each other; in other words, the `mutex` locks the `counter` variable then unlocks it in each iteration of the loop when we call the `increment` function for the first time and when in the second function call, we would have a totally different instance of `sync.Mutex` and for this reason mutating the `counter` variable becomes out of control.
+If we run the program, the race condition scenario is back. The reason is that by calling the `increment` function two times, we are creating two separate `mutex` variables—one for each function call. The locking and unlocking functionalities have no effect on each other. Each function call has its own mutex instance, so they don't actually coordinate access to the shared `counter` variable. This demonstrates why mutexes must be shared between goroutines to be effective.
 
 ## What Is Atomicity?
 
--   In the context of concurrent programming, atomicity refers to the property of an operation or a series of operations being executed as a single, indivisible unit. An atomic operation is one that appears to occur instantaneously from the perspective of other threads or processes, and it is not subject to interference by other concurrent operations.
--   In the context of shared variables, atomicity is crucial to prevent race conditions. A race condition occurs when multiple threads or goroutines access shared data concurrently, and at least one of them modifies the data. If the operations on the shared data are not atomic, the interleaving of operations from different threads can lead to unexpected and incorrect results.
--   By making the increment operation atomic, you ensure that it is executed as a single, uninterruptible unit. In Go, you can use synchronization mechanisms such as `mutex` or the `sync/atomic` package to achieve atomic operations.
--   The `sync/atomic` package provides atomic operations for basic types like integers, ensuring that operations like increments, decrements, swaps, etc., are atomic and free from race conditions.
--   We rewrite the above program using the `sync.atomic` package as follows:
+In the context of concurrent programming, atomicity refers to the property of an operation or a series of operations being executed as a single, indivisible unit. An atomic operation is one that appears to occur instantaneously from the perspective of other threads or processes, and it is not subject to interference by other concurrent operations.
+
+In the context of shared variables, atomicity is crucial to prevent race conditions. A race condition occurs when multiple threads or goroutines access shared data concurrently, and at least one of them modifies the data. If the operations on the shared data are not atomic, the interleaving of operations from different threads can lead to unexpected and incorrect results.
+
+By making the increment operation atomic, you ensure that it is executed as a single, uninterruptible unit. In Go, you can use synchronization mechanisms such as `mutex` or the `sync/atomic` package to achieve atomic operations.
+
+The `sync/atomic` package provides atomic operations for basic types like integers, ensuring that operations like increments, decrements, swaps, etc., are atomic and free from race conditions.
+
+We can rewrite the above program using the `sync/atomic` package as follows:
 
 ```go
 package main
@@ -773,20 +877,631 @@ func main() {
 }
 ```
 
--   Still the won't be any race condition and no matter how many times we run it, we'll get the same result.
+Still there won't be any race condition and no matter how many times we run it, we'll get the same result: `Final Counter: 2000`.
 
-## What Are The Differences between `sync.Mutex` And `sync.Atomic`?
+## The `context` Package: Managing Goroutine Lifecycles
 
--   Both `sync.Mutex` and `sync.atomic` package can be used to achieve synchronization and prevent race conditions in concurrent programming. However, there are differences between them, and the choice between them depends on the specific requirements of your program. Here are some key differences:
--   Mutex:
-    -   Provides a way to protect a block of code (critical section) with a lock and unlock mechanism. It is suitable for protecting larger sections of code where multiple operations need to be performed atomically.
-    -   Involves more overhead because it requires acquiring and releasing locks, and it may involve context switching between goroutines.
--   `sync/atomic`:
-    -   Provides atomic operations on basic types (e.g., integers). It is more suitable for fine-grained operations, such as increments, swaps, and compare-and-swap operations on individual variables.
-    -   Generally has lower overhead because it directly operates on memory without acquiring locks.
-- In summary, if you need to protect larger sections of code or perform more complex synchronization, a mutex is often a suitable choice. If you have specific atomic operations on individual variables and need lower-level, more lightweight synchronization, the sync/atomic package might be more appropriate. 
+The `context` package is fundamental to modern Go concurrency. It provides a way to carry deadlines, cancellation signals, and request-scoped values across API boundaries and between goroutines. **Mastering context can eliminate 90% of potential goroutine leaks.**
 
+### Why Context Matters
 
+Without proper cancellation, goroutines can leak—they keep running even when their work is no longer needed, consuming memory and CPU. Context solves this by providing a standard way to signal cancellation.
 
-## Links
-https://www.youtube.com/watch?v=VkGQFFl66X4&list=PLKOhSssLmvQQPFv-QqbRZ10rn3UdBLvVC&index=3
+### Basic Context Usage
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
+func doWork(ctx context.Context, name string) {
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Printf("%s: stopped due to cancellation\n", name)
+			return
+		default:
+			fmt.Printf("%s: working...\n", name)
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+}
+
+func main() {
+	// Create a context that can be cancelled
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go doWork(ctx, "Worker 1")
+	go doWork(ctx, "Worker 2")
+
+	// Let them work for 2 seconds
+	time.Sleep(2 * time.Second)
+
+	// Cancel the context - stops all goroutines
+	cancel()
+
+	// Give goroutines time to stop
+	time.Sleep(500 * time.Millisecond)
+	fmt.Println("Main: done")
+}
+```
+
+### Context with Timeout
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"time"
+)
+
+func fetchData(ctx context.Context) error {
+	// Simulate a long-running operation
+	select {
+	case <-time.After(3 * time.Second):
+		fmt.Println("Data fetched successfully")
+		return nil
+	case <-ctx.Done():
+		return ctx.Err() // Returns context.DeadlineExceeded or context.Canceled
+	}
+}
+
+func main() {
+	// Create a context with 1-second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel() // Always call cancel to release resources
+
+	err := fetchData(ctx)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err) // Prints: context deadline exceeded
+	}
+}
+```
+
+### Context Best Practices
+
+1. **Always call cancel**: Even if the context will expire, call `cancel()` to release resources. Use `defer cancel()` immediately after creating the context.
+
+2. **Pass context as first parameter**: By convention, context is always the first parameter in function signatures:
+   ```go
+   func doSomething(ctx context.Context, data string) error
+   ```
+
+3. **Don't store context in structs**: Contexts are designed to be short-lived and passed explicitly through call chains.
+
+4. **Use select with ctx.Done()**: Always provide a way to cancel long-running operations:
+   ```go
+   select {
+   case <-ctx.Done():
+       return ctx.Err()
+   case result := <-workChan:
+       // process result
+   }
+   ```
+
+5. **Context values are for request-scoped data only**: Don't use context.Value for passing optional parameters. Use it only for request-scoped data like request IDs, authentication tokens, etc.
+
+## Preventing Goroutine Leaks
+
+Goroutine leaks occur when goroutines are started but never properly terminated, causing memory leaks and resource exhaustion in long-running applications. Here's how to prevent them:
+
+### Common Leak Scenario 1: Blocked Channel Send
+
+```go
+// BAD: This goroutine leaks if no one receives
+func leakyFunction() {
+	ch := make(chan int)
+	go func() {
+		result := expensiveOperation()
+		ch <- result // Blocks forever if main doesn't receive
+	}()
+	// If we return here without receiving, goroutine leaks
+}
+```
+
+**Solution**: Use context for cancellation:
+
+```go
+// GOOD: Goroutine can be cancelled
+func nonLeakyFunction(ctx context.Context) {
+	ch := make(chan int)
+	go func() {
+		result := expensiveOperation()
+		select {
+		case ch <- result:
+			// Sent successfully
+		case <-ctx.Done():
+			// Context cancelled, exit goroutine
+			return
+		}
+	}()
+}
+```
+
+### Common Leak Scenario 2: Infinite Loop Without Exit
+
+```go
+// BAD: No way to stop this goroutine
+func startWorker() {
+	go func() {
+		for {
+			doWork()
+			time.Sleep(time.Second)
+		}
+	}()
+}
+```
+
+**Solution**: Use context to signal shutdown:
+
+```go
+// GOOD: Goroutine can be gracefully stopped
+func startWorker(ctx context.Context) {
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return // Exit goroutine
+			default:
+				doWork()
+				time.Sleep(time.Second)
+			}
+		}
+	}()
+}
+```
+
+### Common Leak Scenario 3: Goroutine Waiting on Channel That Never Closes
+
+```go
+// BAD: If producer stops sending without closing channel, consumer leaks
+func consumer(ch chan int) {
+	go func() {
+		for val := range ch { // Blocks forever if channel never closes
+			process(val)
+		}
+	}()
+}
+```
+
+**Solution**: Always close channels when done, or use context:
+
+```go
+// GOOD: Multiple exit strategies
+func consumer(ctx context.Context, ch chan int) {
+	go func() {
+		for {
+			select {
+			case val, ok := <-ch:
+				if !ok {
+					return // Channel closed
+				}
+				process(val)
+			case <-ctx.Done():
+				return // Context cancelled
+			}
+		}
+	}()
+}
+```
+
+### Detecting Goroutine Leaks
+
+Use `runtime.NumGoroutine()` to monitor goroutine count:
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+func main() {
+	fmt.Printf("Initial goroutines: %d\n", runtime.NumGoroutine())
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			time.Sleep(10 * time.Second) // Long-running
+		}()
+	}
+
+	fmt.Printf("After launching 10: %d\n", runtime.NumGoroutine())
+
+	// In production, use monitoring to track this metric
+}
+```
+
+**Production tip**: Monitor `runtime.NumGoroutine()` in your applications. A steadily increasing goroutine count indicates a leak.
+
+## What Are The Differences between `sync.Mutex` and `sync/atomic`?
+
+Both `sync.Mutex` and the `sync/atomic` package can be used to achieve synchronization and prevent race conditions in concurrent programming. However, there are differences between them, and the choice depends on the specific requirements of your program.
+
+### `sync.Mutex`
+
+**Use case**: Protecting larger sections of code (critical sections) where multiple operations need to be performed atomically.
+
+**How it works**: Provides a lock and unlock mechanism. When a goroutine acquires a lock, other goroutines must wait.
+
+**Overhead**: Higher overhead because it requires acquiring and releasing locks, and may involve context switching between goroutines.
+
+**Example use**: Protecting access to a complex data structure like a map or performing multiple related operations that must happen atomically.
+
+### `sync/atomic`
+
+**Use case**: Fine-grained operations on individual variables (integers, pointers, etc.).
+
+**How it works**: Provides atomic operations directly on memory (increments, swaps, compare-and-swap, etc.) without locks.
+
+**Overhead**: Lower overhead because it directly operates on memory using CPU-level atomic instructions without acquiring locks.
+
+**Example use**: Incrementing a counter, updating a flag, or swapping a value.
+
+### Summary
+
+- **Use `sync.Mutex`** when you need to protect larger sections of code or perform complex synchronization
+- **Use `sync/atomic`** when you have specific atomic operations on individual variables and need lower-level, lightweight synchronization
+- For simple counters or flags, `sync/atomic` is faster and more efficient
+- For complex operations involving multiple variables, use `sync.Mutex`
+
+## Advanced Concurrency Patterns
+
+### Worker Pool Pattern
+
+The worker pool pattern limits the number of concurrent workers, which is essential for controlling resource usage when processing many tasks:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for job := range jobs {
+		fmt.Printf("Worker %d processing job %d\n", id, job)
+		time.Sleep(time.Second) // Simulate work
+		results <- job * 2
+	}
+}
+
+func main() {
+	const numWorkers = 3
+	const numJobs = 10
+
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+
+	var wg sync.WaitGroup
+
+	// Start workers
+	for i := 1; i <= numWorkers; i++ {
+		wg.Add(1)
+		go worker(i, jobs, results, &wg)
+	}
+
+	// Send jobs
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs) // Important: close jobs channel when done sending
+
+	// Wait for workers to finish
+	wg.Wait()
+	close(results) // Close results after all workers are done
+
+	// Collect results
+	for result := range results {
+		fmt.Printf("Result: %d\n", result)
+	}
+}
+```
+
+**Key points**:
+- Fixed number of workers prevents resource exhaustion
+- Jobs channel buffers work items
+- Closing the jobs channel signals workers to exit
+- WaitGroup ensures all workers finish before closing results
+
+### Fan-Out, Fan-In Pattern
+
+Fan-out distributes work to multiple goroutines; fan-in combines their results:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func generator(nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for _, n := range nums {
+			out <- n
+		}
+	}()
+	return out
+}
+
+func square(in <-chan int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for n := range in {
+			out <- n * n
+		}
+	}()
+	return out
+}
+
+// Fan-in: merge multiple channels into one
+func merge(channels ...<-chan int) <-chan int {
+	out := make(chan int)
+	var wg sync.WaitGroup
+
+	wg.Add(len(channels))
+	for _, ch := range channels {
+		go func(c <-chan int) {
+			defer wg.Done()
+			for n := range c {
+				out <- n
+			}
+		}(ch)
+	}
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	return out
+}
+
+func main() {
+	in := generator(1, 2, 3, 4, 5, 6, 7, 8)
+
+	// Fan-out: distribute work to multiple goroutines
+	c1 := square(in)
+	c2 := square(in)
+	c3 := square(in)
+
+	// Fan-in: combine results
+	for result := range merge(c1, c2, c3) {
+		fmt.Println(result)
+	}
+}
+```
+
+### Pipeline Pattern with Cancellation
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+)
+
+func generator(ctx context.Context, nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for _, n := range nums {
+			select {
+			case out <- n:
+			case <-ctx.Done():
+				return // Cancelled
+			}
+		}
+	}()
+	return out
+}
+
+func square(ctx context.Context, in <-chan int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for n := range in {
+			select {
+			case out <- n * n:
+			case <-ctx.Done():
+				return // Cancelled
+			}
+		}
+	}()
+	return out
+}
+
+func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	nums := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+	// Build pipeline
+	in := generator(ctx, nums...)
+	out := square(ctx, in)
+
+	// Read first 3 results, then cancel
+	for i := 0; i < 3; i++ {
+		fmt.Println(<-out)
+	}
+
+	cancel() // Cancel remaining work
+	fmt.Println("Pipeline cancelled")
+}
+```
+
+**Key insight**: Each stage checks `ctx.Done()` to enable graceful cancellation of the entire pipeline.
+
+### Using `errgroup` for Error Handling
+
+The `golang.org/x/sync/errgroup` package extends `WaitGroup` with error propagation:
+
+```go
+package main
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"golang.org/x/sync/errgroup"
+)
+
+func task1(ctx context.Context) error {
+	time.Sleep(1 * time.Second)
+	fmt.Println("Task 1 completed")
+	return nil
+}
+
+func task2(ctx context.Context) error {
+	time.Sleep(2 * time.Second)
+	return errors.New("task 2 failed")
+}
+
+func task3(ctx context.Context) error {
+	time.Sleep(3 * time.Second)
+	fmt.Println("Task 3 completed")
+	return nil
+}
+
+func main() {
+	g, ctx := errgroup.WithContext(context.Background())
+
+	g.Go(func() error { return task1(ctx) })
+	g.Go(func() error { return task2(ctx) })
+	g.Go(func() error { return task3(ctx) })
+
+	// Wait for all tasks; returns first non-nil error
+	if err := g.Wait(); err != nil {
+		fmt.Printf("Error: %v\n", err)
+	}
+}
+```
+
+**Benefits**:
+- Automatic context cancellation on first error
+- Cleaner error handling than manual WaitGroup
+- First-error-wins semantics
+
+## Performance Considerations
+
+### Buffered vs Unbuffered Channels
+
+**Unbuffered channels** (`make(chan T)`):
+- Provide strict synchronization
+- Sender blocks until receiver is ready
+- Better when you need point-to-point coordination
+- Slightly better performance for synchronization
+
+**Buffered channels** (`make(chan T, n)`):
+- Sender blocks only when buffer is full
+- Receiver blocks only when buffer is empty
+- Better for handling bursts of work
+- Can reduce context switches
+
+```go
+// Unbuffered - strict synchronization
+ch := make(chan int)
+
+// Buffered - allows n sends without receiver
+ch := make(chan int, 100)
+```
+
+**Guideline**: Start with unbuffered channels for clarity. Add buffering only when profiling shows it helps.
+
+### Goroutine Creation Cost
+
+- Goroutines are cheap: ~2 KB initial stack
+- Can run millions of goroutines
+- However, creating goroutines isn't free
+- Use worker pools for high-volume workloads
+
+### Using the Race Detector
+
+Always test concurrent code with the race detector:
+
+```bash
+go test -race
+go run -race main.go
+go build -race
+```
+
+The race detector finds data races at runtime. It's invaluable for concurrent code.
+
+### Benchmarking Concurrent Code
+
+```go
+package main
+
+import (
+	"sync"
+	"testing"
+)
+
+func BenchmarkChannelCommunication(b *testing.B) {
+	ch := make(chan int)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b.N; i++ {
+			ch <- i
+		}
+		close(ch)
+	}()
+
+	go func() {
+		defer wg.Done()
+		for range ch {
+		}
+	}()
+
+	wg.Wait()
+}
+
+func BenchmarkMutex(b *testing.B) {
+	var mu sync.Mutex
+	var counter int
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			mu.Lock()
+			counter++
+			mu.Unlock()
+		}
+	})
+}
+```
+
+Run with: `go test -bench=. -benchmem`
+
+## Key Takeaways
+
+1. **Use `WaitGroup` or `context`** to coordinate goroutine lifecycles
+2. **Always provide cancellation** for long-running goroutines
+3. **Channels are for communication**; mutexes are for protecting shared state
+4. **Unbuffered channels provide synchronization**; buffered channels provide asynchrony
+5. **Context is crucial** for request-scoped cancellation and deadlines
+6. **Prevent goroutine leaks** by ensuring all goroutines can exit
+7. **Use `errgroup`** for cleaner error handling in concurrent code
+8. **Always test with `-race` flag** to catch data races
+9. **Profile before optimizing** concurrent code
+10. **Keep it simple**: Don't use concurrency if sequential code is sufficient
