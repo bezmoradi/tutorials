@@ -2,10 +2,10 @@
 
 Go offers two types of similar data structures for storing a list of items:
 
--   Array: A numbered sequence of similar-type elements which is fixed in length
--   Slice: An array that can grow in size or shrink
+-   **Array**: A numbered sequence of similar-type elements which is fixed in length
+-   **Slice**: An array that can grow in size or shrink
 
-The key point here is that both Array and Slice elements must be of a **single** type; meaning all members must be either `int`, `string`, or any other type (as arrays are fixed in size, they are mostly used for Go internals and in general, slices are more common).
+The key point here is that both Array and Slice elements must be of a **single** type; meaning all members must be either `int`, `string`, or any other type. As arrays are fixed in size, they are mostly used for Go internals and in general, slices are more common.
 
 ## Array
 

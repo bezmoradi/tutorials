@@ -1,8 +1,6 @@
 # Go > Concurrency
 
-Before looking into how concurrency works in Go, it's worth talking a little bit about dual-core CPUs. In 2005, Intel released its first generation of dual-core CPUs. Then in 2007, Google started working on Go and the language was officially announced to the public in November 2009, with version 1.0 released in March 2012. Go, with its strong support for concurrency, was designed from the ground up to take advantage of multi-core architectures to efficiently handle parallel processing.
-
-## Concurrency vs. Parallelism
+Go, with its strong support for concurrency, was designed from the ground up to take advantage of multi-core architectures to efficiently handle parallel processing. Before diving into goroutines and channels, let's first understand the difference between concurrency and parallelism.
 
 **Concurrency** is about managing multiple tasks and making progress on them concurrently. It doesn't necessarily mean executing them simultaneously. It deals with the structure of the program and how tasks are organized. In a concurrent system, tasks can start, run, and complete in overlapping time periods, but they might not be actively executing at the same time.
 
