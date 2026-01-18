@@ -952,15 +952,13 @@ This is the idiomatic Go way to wait for multiple goroutines to complete.
 
 ## Race Condition & Mutex
 
-A mutex, short for "mutual exclusion," is a synchronization mechanism used in concurrent programming to ensure that only one thread or goroutine can access a shared resource or critical section at a time. The purpose of a mutex is to prevent data races and maintain the consistency of shared data.
+A mutex, short for "mutual exclusion," is a synchronization mechanism used in concurrent programming to ensure that only one thread or goroutine can access a shared resource or critical section at a time. The purpose of a mutex is to prevent data races and maintain the consistency of shared data. This is how mutex works:
 
-### How a Mutex Works
-
-**Locking**: When a goroutine wants to access a critical section or modify a shared resource, it must acquire the mutex by calling the Lock method. If the mutex is currently held by another goroutine, the requesting goroutine will be blocked until the mutex is released by the current holder.
+**Locking**: When a goroutine wants to access a critical section or modify a shared resource, it must acquire the mutex by calling the `Lock` method. If the mutex is currently held by another goroutine, the requesting goroutine will be blocked until the mutex is released by the current holder.
 
 **Critical Section**: Once a goroutine has acquired the mutex, it can safely access the shared resource or execute a critical section of code. The mutex ensures that only one goroutine is in this critical section at any given time.
 
-**Unlocking**: After completing the critical section, the goroutine releases the mutex by calling the Unlock method. This allows other goroutines waiting for the mutex to acquire it and proceed.
+**Unlocking**: After completing the critical section, the goroutine releases the mutex by calling the `Unlock` method. This allows other goroutines waiting for the mutex to acquire it and proceed.
 
 ### Understanding Race Conditions
 
@@ -972,15 +970,13 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
-var counter = 0
+var counter int32 = 0
 var wg = sync.WaitGroup{}
 
 func main() {
 	wg.Add(2)
-	start := time.Now()
 
 	go processTask()
 	go processTask()
@@ -988,7 +984,6 @@ func main() {
 	wg.Wait()
 
 	fmt.Printf("Counter value: %v\n", counter)
-	fmt.Printf("Total time: %v\n", time.Since(start))
 }
 
 func processTask() {
@@ -1049,7 +1044,7 @@ Goroutine 9 (running) created at:
 
 As shown above, both GoRoutine 8 and 9 are trying to read from and write to the same memory location (`0x000100f70a38`). Also the above warning shows that you goroutine 8 was started by line 16 and goroutine 9 was started by line 17. We could say that the first warning is that one goroutine read `counter` while another was writing; the second warning shows that both goroutines were writing at the same time.
 
-Here's a simple example of a race condition in Go:
+To address this issue and avoid race conditions, you should use synchronization mechanisms like a **Mutex** (which stands for **Mut**ually **ex**clusive). Here is how we can fix it using `Mutex`:
 
 ```go
 package main
@@ -1057,99 +1052,75 @@ package main
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
-var counter = 0
-var wg sync.WaitGroup
-
-func increment() {
-	for i := 0; i < 1000; i++ {
-		counter++
-	}
-
-	wg.Done()
-}
+var counter int32 = 0
+var mutex = sync.Mutex{}
+var wg = sync.WaitGroup{}
 
 func main() {
 	wg.Add(2)
+	start := time.Now()
 
-	go increment()
-	go increment()
+	go processTask()
+	go processTask()
 
 	wg.Wait()
 
-	fmt.Println("Final Counter:", counter)
+	fmt.Printf("Counter value: %v\n", counter)
+	fmt.Printf("Total time: %v\n", time.Since(start))
 }
-```
 
-In the first run we might get `Final Counter: 1523`, in the second run `Final Counter: 1891`, and in the third run `Final Counter: 1645`. The value is unpredictable because two goroutines are concurrently incrementing a shared counter variable. Since there is no synchronization mechanism (like locks or channels), a race condition occurs, and the final value of the counter changes with each run.
+func processTask() {
+	defer wg.Done()
 
-To address this issue and avoid race conditions, you should use synchronization mechanisms like a **Mutex** (which stands for **Mut**ually **ex**clusive). Here's an example using a mutex:
-
-```go
-package main
-
-import (
-	"fmt"
-	"sync"
-)
-
-var counter = 0
-var wg sync.WaitGroup
-var mutex sync.Mutex
-
-func increment() {
-	for i := 0; i < 1000; i++ {
+	for range 1_000_000 {
 		mutex.Lock()
 		counter++
 		mutex.Unlock()
 	}
-
-	wg.Done()
-}
-
-func main() {
-	wg.Add(2)
-
-	go increment()
-	go increment()
-
-	wg.Wait()
-
-	fmt.Println("Final Counter:", counter)
 }
 ```
 
-In this modified version, `mutex` is used to ensure that only one goroutine can modify the `counter` variable at a time. The `Lock` and `Unlock` methods of the `mutex` guarantee the atomicity of the critical section, preventing race conditions and ensuring that the final value of counter is as expected. Now we will get `Final Counter: 2000` in the output without any race condition.
+In this modified version, `mutex` is used to ensure that only one goroutine can modify the `counter` variable at a time. The `Lock` and `Unlock` methods of the `mutex` guarantee the atomicity of the critical section, preventing race conditions and ensuring that the final value of counter is as expected. Now if we run `go run -race .`, we'll get `Counter value: 2000000`.
 
-As an experiment, let's place the `mutex` variable inside the `increment` function:
+As an experiment, let's place the `mutex` variable inside the `processTask` function:
 
 ```go
-func increment() {
-	var mutex sync.Mutex
+func processTask() {
+	var mutex = sync.Mutex{}
 
-	for i := 0; i < 1000; i++ {
+	defer wg.Done()
+
+	for range 1_000_000 {
 		mutex.Lock()
 		counter++
 		mutex.Unlock()
 	}
-	wg.Done()
 }
 ```
 
-If we run the program, the race condition scenario is back. The reason is that by calling the `increment` function two times, we are creating two separate `mutex` variables—one for each function call. The locking and unlocking functionalities have no effect on each other. Each function call has its own mutex instance, so they don't actually coordinate access to the shared `counter` variable. This demonstrates why mutexes must be shared between goroutines to be effective.
+If we run the program, the race condition scenario is back and the reason is that by calling the `processTask` function two times, we are creating two separate `mutex` variables; one for each function call and the locking and unlocking functionalities have no effect on each other. Each function call has its own mutex instance, so they don't actually coordinate access to the shared `counter` variable. This demonstrates why mutexes must be shared between goroutines to be effective.
 
 ## What Is Atomicity?
 
-In the context of concurrent programming, atomicity refers to the property of an operation or a series of operations being executed as a single, indivisible unit. An atomic operation is one that appears to occur instantaneously from the perspective of other threads or processes, and it is not subject to interference by other concurrent operations.
+In concurrent programming, atomicity means: "Go it all at once, or not at all." An atomic operation is an operation that:
+
+-   Cannot be split into smaller steps
+-   Cannot be interrupted by another goroutine or thread
+-   Appears to happen instantly to everything else in the program
+-   Other goroutines never see the operation “half done”.
+
+We have seen so far that when multiple goroutines work with the same variable at the same time, problems can happen Which is called a race condition. When an operation is atomic, all its steps happen as one unbreakable action. This guarantees that:
+
+-   Only one goroutine can modify the value at a time
+-   No updates are lost
+-   The final result is correct
 
 In the context of shared variables, atomicity is crucial to prevent race conditions. A race condition occurs when multiple threads or goroutines access shared data concurrently, and at least one of them modifies the data. If the operations on the shared data are not atomic, the interleaving of operations from different threads can lead to unexpected and incorrect results.
 
-By making the increment operation atomic, you ensure that it is executed as a single, uninterruptible unit. In Go, you can use synchronization mechanisms such as `mutex` or the `sync/atomic` package to achieve atomic operations.
-
-The `sync/atomic` package provides atomic operations for basic types like integers, ensuring that operations like increments, decrements, swaps, etc., are atomic and free from race conditions.
-
-We can rewrite the above program using the `sync/atomic` package as follows:
+So far, we have seen how we can use the `mutex` synchronization mechanism to achieve atomic operations. `sync/atomic` package is another option we can use to achieve atomic operations. Basically, it provides atomic operations for basic types like integers, ensuring that operations like increments, decrements, swaps, etc., are atomic and free from race conditions. We can rewrite the above program using the `sync/atomic` package as follows:
 
 ```go
 package main
@@ -1160,31 +1131,124 @@ import (
 	"sync/atomic"
 )
 
-var counter int32
-var wg sync.WaitGroup
-
-func increment() {
-
-	for i := 0; i < 1000; i++ {
-		atomic.AddInt32(&counter, 1)
-	}
-
-	wg.Done()
-}
+var counter int32 = 0
+var wg = sync.WaitGroup{}
 
 func main() {
 	wg.Add(2)
 
-	go increment()
-	go increment()
+	go processTask()
+	go processTask()
 
 	wg.Wait()
 
-	fmt.Println("Final Counter:", counter)
+	fmt.Printf("Counter value: %v\n", counter)
+}
+
+func processTask() {
+	defer wg.Done()
+
+	for range 1_000_000 {
+		atomic.AddInt32(&counter, 1)
+	}
 }
 ```
 
-Still there won't be any race condition and no matter how many times we run it, we'll get the same result: `Final Counter: 2000`.
+Still there won't be any race condition and no matter how many times we run it, we'll get the same result: `Counter value: 2000000`.
+
+## Condition Variables
+
+So far, we’ve learned how to protect shared data using a mutex and how to make operations atomic using the `sync/atomic` package, which helps prevent race conditions when multiple goroutines access the same data. However, there is still an important problem we haven't solved yet: how can goroutines efficiently **wait for a specific condition** to become true without wasting CPU resources or constantly checking the same value in a loop?
+
+A mutex can protect data, but it cannot coordinate timing. Consider this scenario that what if one goroutine needs to wait until another goroutine finishes some work or changes a value? A common (but bad) solution is busy waiting:
+
+```go
+for counter < 10 {
+	// keep checking
+}
+```
+
+The problem with the above struct is that it wastes CPU, it doesn't scale, and it's inefficient. Instead, we need a struct that kills the machine "Go to sleep until something changes then wake me up." That's exactly what Condition Variables are for. A condition variable allows goroutines to:
+
+-   Wait until a condition becomes true
+-   Sleep efficiently without using CPU
+-   Wake up when another goroutine signals that something has changed
+
+In Go, condition variables are implemented using `sync.Cond` which gives us the ability to use the following method:
+
+-   `Wait()`: Puts the goroutine to sleep (releases the mutex while waiting)
+-   `Signal()`: Wakes one waiting goroutine
+-   `Broadcast()`: Wakes all waiting goroutines
+
+Now we are going to extend our counter example in a way that one goroutine increments the `counter` variable, another one waits until `counter` is equal to `2_000_000`. Once the condition is met, the awaiting goroutine continues.
+
+With this intro, let's see how we can extend our program to use condition variables:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var counter int32 = 0
+var mutex = sync.Mutex{}
+var wg = sync.WaitGroup{}
+var cond = sync.NewCond(&mutex)
+
+func main() {
+	wg.Add(2)
+
+	go processTask()
+	go processTask()
+
+	go waitForCounter()
+
+	wg.Wait()
+}
+
+func processTask() {
+	defer wg.Done()
+
+	for range 1_000_000 {
+		mutex.Lock()
+		counter++
+
+		if counter == 2_000_000 {
+			cond.Signal()
+		}
+
+		mutex.Unlock()
+	}
+}
+
+func waitForCounter() {
+	mutex.Lock()
+	for counter < 2_000_000 {
+		cond.Wait()
+	}
+	fmt.Println("Counter reached:", counter)
+	mutex.Unlock()
+}
+```
+
+In answer to the question that as we have created three manual Go routines but we define two of them inside `wg.Add(2)`, we need to say that `sync.WaitGroup` answers one very specific question: "How many goroutines do I need to **wait** for before I can continue?" It does not represent how many goroutines **exist** in the program or how many goroutines you start; instead, it only tracks the goroutines that are expected to call `Done()`, and execution continues only after all of those goroutines have signaled that they are finished.
+
+Each goroutine runs this loop `1_000_000` times and there are two goroutines so `1_000_000 + 1_000_000 = 2_000_000`. Here is what happens under the hood:
+
+-   The `waitForCounter` goroutine locks the `mutex` so it can safely read counter
+-   It checks the value of `counter`. If the condition is not met, it calls `Wait()`
+-   Calling `Wait()` releases the `mutex` so other goroutines can continue
+-   The `waitForCounter` goroutine is then put to **sleep** and uses no CPU
+-   Another goroutine locks the `mutex` and updates `counter`
+-   Once the update may satisfy the condition, it calls `Signal()`
+-   The sleeping `waitForCounter` goroutine wakes up and gefore continuing, it re-acquires the `mutex`
+-   It checks the condition again (this is very important). If the condition is now true, execution continues; otherwise, it goes back to waiting by calling `Wait()`
+
+### `Signal` versus `Broadcast`
+
+`Signal` wakes only one waiting goroutine, while `Broadcast` wakes all waiting goroutines. Therefore, to observe the effect of Broadcast, there must be more than one goroutine waiting on the condition; otherwise, it behaves the same as `Signal`.
 
 ## The `context` Package: Managing Goroutine Lifecycles
 
