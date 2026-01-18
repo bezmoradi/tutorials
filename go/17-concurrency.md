@@ -303,7 +303,7 @@ func processTask(link string) {
 }
 ```
 
-Now if we set `runtime.GOMAXPROCS(4)` We won't get any performance improvement. Now let's refactor the above code to make it concurrent:
+Now if we set `runtime.GOMAXPROCS(4)` we won't get any performance improvement because the code itself is procedural. . Now let's refactor the above code to make it concurrent:
 
 ```go
 package main
@@ -1052,7 +1052,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
 )
 
 var counter int32 = 0
@@ -1061,7 +1060,6 @@ var wg = sync.WaitGroup{}
 
 func main() {
 	wg.Add(2)
-	start := time.Now()
 
 	go processTask()
 	go processTask()
@@ -1069,7 +1067,6 @@ func main() {
 	wg.Wait()
 
 	fmt.Printf("Counter value: %v\n", counter)
-	fmt.Printf("Total time: %v\n", time.Since(start))
 }
 
 func processTask() {
@@ -1198,7 +1195,7 @@ var wg = sync.WaitGroup{}
 var cond = sync.NewCond(&mutex)
 
 func main() {
-	wg.Add(2)
+	wg.Add(3)
 
 	go processTask()
 	go processTask()
@@ -1224,16 +1221,16 @@ func processTask() {
 }
 
 func waitForCounter() {
+	defer wg.Done()
 	mutex.Lock()
 	for counter < 2_000_000 {
 		cond.Wait()
 	}
+
 	fmt.Println("Counter reached:", counter)
 	mutex.Unlock()
 }
 ```
-
-In answer to the question that as we have created three manual Go routines but we define two of them inside `wg.Add(2)`, we need to say that `sync.WaitGroup` answers one very specific question: "How many goroutines do I need to **wait** for before I can continue?" It does not represent how many goroutines **exist** in the program or how many goroutines you start; instead, it only tracks the goroutines that are expected to call `Done()`, and execution continues only after all of those goroutines have signaled that they are finished.
 
 Each goroutine runs this loop `1_000_000` times and there are two goroutines so `1_000_000 + 1_000_000 = 2_000_000`. Here is what happens under the hood:
 
@@ -1248,7 +1245,72 @@ Each goroutine runs this loop `1_000_000` times and there are two goroutines so 
 
 ### `Signal` versus `Broadcast`
 
-`Signal` wakes only one waiting goroutine, while `Broadcast` wakes all waiting goroutines. Therefore, to observe the effect of Broadcast, there must be more than one goroutine waiting on the condition; otherwise, it behaves the same as `Signal`.
+`Signal` wakes only one waiting goroutine, while `Broadcast` awakes all waiting goroutines. Therefore, to observe the effect of Broadcast, there must be more than one goroutine waiting on the condition; otherwise, it behaves the same as `Signal`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var counter int32 = 0
+var mutex = sync.Mutex{}
+var wg = sync.WaitGroup{}
+var cond = sync.NewCond(&mutex)
+
+func main() {
+	wg.Add(4)
+
+	go processTask()
+	go processTask()
+
+	go waitForCounter()
+	go waitForCounter2()
+
+	wg.Wait()
+}
+
+func processTask() {
+	defer wg.Done()
+
+	for range 1_000_000 {
+		mutex.Lock()
+		counter++
+
+		if counter == 2_000_000 {
+			cond.Broadcast()
+		}
+
+		mutex.Unlock()
+	}
+}
+
+func waitForCounter() {
+	defer wg.Done()
+	mutex.Lock()
+	for counter < 2_000_000 {
+		cond.Wait()
+	}
+
+	fmt.Println("Counter reached:", counter)
+	mutex.Unlock()
+}
+
+func waitForCounter2() {
+	defer wg.Done()
+	mutex.Lock()
+	for counter < 2_000_000 {
+		cond.Wait()
+	}
+
+	fmt.Println("Counter reached:", counter)
+	mutex.Unlock()
+}
+```
+
+We have introduced a second listener, `waitForCounter2`, which waits on the same condition variable as `waitForCounter`. Both goroutines block until the shared condition (`counter >= 2_000_000`) becomes true. Because multiple goroutines may be waiting on the same condition, `cond.Broadcast()` is used to wake all waiting goroutines once the condition is satisfied. Each awakened goroutine re-acquires the mutex, re-checks the condition, and then proceeds safely (If `cond.Broadcast()` is replaced with `cond.Signal()`, only one waiting goroutine is awakened. The other remains blocked indefinitely, causing the program to deadlock when `wg.Wait()` is called.)
 
 ## The `context` Package: Managing Goroutine Lifecycles
 
