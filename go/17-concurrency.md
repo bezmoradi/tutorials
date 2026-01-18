@@ -20,9 +20,11 @@ When you run a program on your computer, the operating system creates a **proces
 
 ### What Is a Thread?
 
-A thread is a **software construct**—a unit of execution within a process that is managed by the operating system, not a physical hardware component. Think of it as a virtual worker created and controlled by your OS that executes your code line by line. Every process has at least one thread (the main thread), but can have multiple threads working concurrently.
+A thread is **software, not hardware**. It's a sequence of instructions that your operating system manages and executes. Think of it as a to-do list that tells the computer what to do step by step.
 
-**Important distinction**: Don't confuse threads (software) with CPU cores (hardware). A CPU core is physical silicon that can execute instructions. Threads are software abstractions that the operating system schedules onto available CPU cores. You can have many more threads than CPU cores—the OS rapidly switches between threads to create the illusion of simultaneous execution.
+Every process has at least one thread (the main thread), but can have multiple threads running at the same time. Each thread executes code line by line.
+
+**Threads vs CPU cores**: A CPU core is the actual physical hardware that runs code. Threads are just lists of instructions in memory. Your operating system takes these thread instructions and assigns them to CPU cores. You can have 100 threads but only 4 CPU cores—the OS just switches between threads very quickly, giving each one a turn on the available cores.
 
 **Key analogy**: If a process is a restaurant kitchen, threads are the cooks working in that kitchen. They share the same kitchen space (memory) but can work on different tasks simultaneously.
 
