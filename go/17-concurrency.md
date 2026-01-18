@@ -177,6 +177,47 @@ Total time: 3.001641834s
 Active goroutines: 1
 ```
 
+We can rewrite our current program by defining `WaitGroup` at function level and passing it on to the other function:
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
+)
+
+
+func main() {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	start := time.Now()
+
+	go processTask("Task 1", 2, &wg)
+	go processTask("Task 2", 1, &wg)
+
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+
+	wg.Wait()
+
+	elapsed := time.Since(start)
+	fmt.Printf("Total time: %v\n", elapsed)
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+}
+
+func processTask(name string, seconds int, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	time.Sleep(time.Duration(seconds) * time.Second)
+	fmt.Printf("%s completed\n", name)
+}
+```
+
+The key takeaway in this refactoring is that we pass a pointer to `sync.WaitGroup` because it is a stateful synchronization object whose internal counter **must** be shared by all goroutines involved in the wait. Passing it by value would copy the `WaitGroup`, so each goroutine would call `Done()` on its **own copy** instead of the original instance whose counter was incremented with `Add()`. As a result, the original counter would never reach zero and `Wait()` would block forever, causing a deadlock. For this reason, `WaitGroup` is explicitly documented as unsafe to copy after first use, and it must always be passed by pointer so all goroutines operate on the same shared state.
+
 ## I/O-bound versus CPU-bound Processes
 
 ### CPU-bound Processes
@@ -995,7 +1036,46 @@ func processTask() {
 }
 ```
 
-Each time you run the above program, you would get a different result in the terminal. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program:
+Each time you run the above program, you would get a different result in the terminal.
+
+## Diagram
+
+To understand why race conditions happen, we need to realize that `counter++` is not a single operation. It's actually three separate steps:
+
+1. **Read** the current value of `counter` from memory
+2. **Add** 1 to that value
+3. **Write** the new value back to memory
+
+When two goroutines execute these steps at the same time without synchronization, they can interfere with each other:
+
+```mermaid
+sequenceDiagram
+    participant M as Memory (counter = 0)
+    participant G1 as Goroutine 1
+    participant G2 as Goroutine 2
+
+    Note over M,G2: Both goroutines execute counter++
+
+    G1->>M: Read counter (gets 0)
+    G2->>M: Read counter (gets 0)
+
+    Note over G1: Calculate: 0 + 1 = 1
+    Note over G2: Calculate: 0 + 1 = 1
+
+    G1->>M: Write 1 to counter
+    G2->>M: Write 1 to counter
+
+    Note over M: Final value: 1 (Expected: 2!)
+    Note over M,G2: Lost update! One increment was lost
+```
+
+**What went wrong:**
+
+Both goroutines read `counter` when it was 0. They both calculated 0 + 1 = 1 and wrote 1 back to memory. The result is that `counter` is 1 instead of 2, even though we incremented it twice. One update was completely lost.
+
+This is why we get unpredictable results. Sometimes the operations interleave this way (losing updates), and sometimes they don't. The timing depends on how the OS scheduler runs the goroutines, which changes every time you run the program.
+
+Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program:
 
 ```sh
 go run -race .
