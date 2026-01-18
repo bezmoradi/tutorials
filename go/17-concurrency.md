@@ -103,9 +103,10 @@ func main() {
 }
 
 func processTask(name string, seconds int) {
+	defer wg.Done()
+
 	time.Sleep(time.Duration(seconds) * time.Second)
 	fmt.Printf("%s completed\n", name)
-	wg.Done()
 }
 ```
 
@@ -125,7 +126,7 @@ To turn function calls into goroutines, we prepend them with the `go` keyword. S
 
 As a last step, inside `processTask` we need to call `wg.Done()` to signal to the `WaitGroup` that the current function is done.
 
-It's best practice to always call `wg.Add()` before launching the goroutine to avoid race conditions. Also, consider using `defer wg.Done()` as the first line in your goroutine to ensure it's always called even if the function panics.
+It's best practice to always call `wg.Add()` before launching the goroutine to avoid race conditions. Also, consider using `defer wg.Done()` as the first line in your goroutine to ensure it's always called; basically, it's safer and more idiomatic, especially in real-world code where the function might return early or encounter an error.
 
 Let's analyze the program:
 
@@ -175,6 +176,182 @@ Active goroutines: 1
 Total time: 3.001641834s
 Active goroutines: 1
 ```
+
+## I/O-bound versus CPU-bound Processes
+
+### CPU-bound Processes
+
+CPU-bound processes are limited by the CPU's computational capacity. Examples include encryption, decryption, or complex calculations that fully utilize the processor. Since CPU-bound processes use the CPU heavily, they are good candidates for parallelism or multi-processing, allowing multiple CPU cores to work simultaneously and speed up execution. In the following example, we are looping through a large number to mimic a CPU-intensive task:
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+func main() {
+	start := time.Now()
+
+	runtime.GOMAXPROCS(1)
+
+	processTask()
+	processTask()
+	processTask()
+	processTask()
+
+	fmt.Printf("Total time: %v\n", time.Since(start)) // Total time: 2.06036775s
+}
+
+func processTask() {
+	for i := 1; i < 1_000_000_000; i++ {
+	}
+}
+```
+
+`runtime.GOMAXPROCS(1)` sets how many CPU cores Go is allowed to use at the same time which in this case is 1. Think of it as:
+
+```text
+GOMAXPROCS = number of logical processors Go runtime can schedule goroutines on
+```
+
+Now let’s set `runtime.GOMAXPROCS(8)`, which allows Go to use eight logical processors. Surprisingly, the program still takes roughly the same amount of time to run. That's because the code executes sequentially, and increasing `GOMAXPROCS` does not improve performance when there is no parallel work. Now let's refactor the above program to make it concurrent using `WaitGroup`:
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
+)
+
+var wg = sync.WaitGroup{}
+
+func main() {
+	wg.Add(4)
+	start := time.Now()
+
+	runtime.GOMAXPROCS(1)
+
+	go processTask()
+	go processTask()
+	go processTask()
+	go processTask()
+
+	wg.Wait()
+
+	fmt.Printf("Total time: %v\n", time.Since(start))
+}
+
+func processTask() {
+	defer wg.Done()
+	for i := 1; i < 1_000_000_000; i++ {
+	}
+}
+```
+
+As shown above, we have four goroutines, but the number of processors is set to 1. In this case, we do not see any performance improvement because, although the code is concurrent, only one processor is available to execute the goroutines. When we increase the value using runtime.`GOMAXPROCS(4)`, Go can schedule the goroutines across multiple processors (cores), allowing them to run in parallel and improving performance (You can set `runtime.GOMAXPROCS(100)` even though your machine has only 8 cores because Go does not prevent you from asking for more processors than your CPU actually has. The operating system will simply time-slice the work across the available cores.)
+
+In this program, setting `GOMAXPROCS(8)` does not provide any additional performance benefit because there are only four CPU-bound goroutines. At most, four goroutines can run in parallel, so once `GOMAXPROCS` is equal to or greater than four, all goroutines are already fully utilizing the available processors. Increasing `GOMAXPROCS` beyond that point does not improve performance, since there is no additional parallel work to schedule.
+
+If you want Go to fully utilize all available CPU cores, set `runtime.GOMAXPROCS(runtime.NumCPU())`.
+
+## I/O-bound Processes
+
+I/O-bound processes are limited by I/O operations, such as reading from disk, making HTTP requests, or handling network traffic. The latency caused by these operations slows them down. Because they spend a lot of time waiting, I/O-bound processes are excellent candidates for concurrency, allowing other tasks to run while they wait. The following program sends multiple HTTP requests:
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"runtime"
+	"time"
+)
+
+func main() {
+	start := time.Now()
+
+	runtime.GOMAXPROCS(1)
+
+	links := []string{
+		"https://www.google.com",
+		"https://www.amazon.com",
+		"https://www.youtube.com",
+		"https://www.wikipedia.org",
+	}
+
+	for _, link := range links {
+		processTask(link)
+	}
+
+	fmt.Printf("Total time: %v\n", time.Since(start)) // Total time: 649.495708ms
+}
+
+func processTask(link string) {
+	_, err := http.Get(link)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(link)
+}
+```
+
+Now if we set `runtime.GOMAXPROCS(4)` We won't get any performance improvement. Now let's refactor the above code to make it concurrent:
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"runtime"
+	"sync"
+	"time"
+)
+
+var wg = sync.WaitGroup{}
+
+func main() {
+	wg.Add(4)
+	start := time.Now()
+
+	runtime.GOMAXPROCS(1)
+
+	links := []string{
+		"https://www.google.com",
+		"https://www.amazon.com",
+		"https://www.youtube.com",
+		"https://www.wikipedia.org",
+	}
+
+	for _, link := range links {
+		go processTask(link)
+	}
+
+	wg.Wait()
+
+	fmt.Printf("Total time: %v\n", time.Since(start)) // Total time: 168.344833ms
+}
+
+func processTask(link string) {
+	defer wg.Done()
+	_, err := http.Get(link)
+	if err != nil {
+		return
+	}
+
+	fmt.Println(link)
+}
+```
+
+As shown above, even with only one processor, I/O-bound operations can achieve significant performance improvements. For I/O-bound processes, the bottleneck is not the CPU but the latency of external operations, such as network requests or disk reads. While a goroutine is waiting for an HTTP response or a file read to complete, the CPU is idle and can switch to executing another goroutine. This means that even with a single processor, multiple I/O-bound tasks can run concurrently because they spend most of their time waiting rather than using the CPU. The Go scheduler efficiently switches between these waiting goroutines, allowing the program to make progress on other tasks without requiring multiple CPU cores. As a result, concurrency improves performance for I/O-bound workloads, even when `GOMAXPROCS` is set to 1.
 
 ## Channels
 
@@ -787,9 +964,92 @@ A mutex, short for "mutual exclusion," is a synchronization mechanism used in co
 
 ### Understanding Race Conditions
 
-In the context of Go, a race condition occurs when two or more goroutines access shared data concurrently, and at least one of them modifies the data. The behavior of the program becomes unpredictable because the outcome depends on the timing and order of execution of the goroutines.
+In the context of Go, a race condition occurs when two or more goroutines access shared data concurrently, and at least one of them modifies the data. The behavior of the program becomes unpredictable because the outcome depends on the timing and order of execution of the goroutines. Race conditions can lead to unexpected and erroneous behavior in a program. The following program shows race condition in action:
 
-Race conditions can lead to unexpected and erroneous behavior in a program. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program. Here's a simple example of a race condition in Go:
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var counter = 0
+var wg = sync.WaitGroup{}
+
+func main() {
+	wg.Add(2)
+	start := time.Now()
+
+	go processTask()
+	go processTask()
+
+	wg.Wait()
+
+	fmt.Printf("Counter value: %v\n", counter)
+	fmt.Printf("Total time: %v\n", time.Since(start))
+}
+
+func processTask() {
+	defer wg.Done()
+
+	for range 1_000_000 {
+		counter++
+	}
+}
+```
+
+Each time you run the above program, you would get a different result in the terminal. Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program:
+
+```sh
+go run -race .
+```
+
+Let's first see part of the output, then analyze it:
+
+```text
+==================
+WARNING: DATA RACE
+Read at 0x000100f70a38 by goroutine 8:
+  main.processTask()
+      main.go:29 +0x84
+
+Previous write at 0x000100f70a38 by goroutine 9:
+  main.processTask()
+      main.go:29 +0x9c
+
+Goroutine 8 (running) created at:
+  main.main()
+      main.go:16 +0x4c
+
+Goroutine 9 (running) created at:
+  main.main()
+      main.go:17 +0x58
+==================
+==================
+WARNING: DATA RACE
+Write at 0x000100f70a38 by goroutine 8:
+  main.processTask()
+      main.go:29 +0x9c
+
+Previous write at 0x000100f70a38 by goroutine 9:
+  main.processTask()
+      main.go:29 +0x9c
+
+Goroutine 8 (running) created at:
+  main.main()
+      main.go:16 +0x4c
+
+Goroutine 9 (running) created at:
+  main.main()
+      main.go:17 +0x58
+==================
+```
+
+As shown above, both GoRoutine 8 and 9 are trying to read from and write to the same memory location (`0x000100f70a38`). Also the above warning shows that you goroutine 8 was started by line 16 and goroutine 9 was started by line 17. We could say that the first warning is that one goroutine read `counter` while another was writing; the second warning shows that both goroutines were writing at the same time.
+
+Here's a simple example of a race condition in Go:
 
 ```go
 package main
@@ -824,7 +1084,7 @@ func main() {
 
 In the first run we might get `Final Counter: 1523`, in the second run `Final Counter: 1891`, and in the third run `Final Counter: 1645`. The value is unpredictable because two goroutines are concurrently incrementing a shared counter variable. Since there is no synchronization mechanism (like locks or channels), a race condition occurs, and the final value of the counter changes with each run.
 
-To address this issue and avoid race conditions, you should use synchronization mechanisms like a mutex. Here's an example using a mutex:
+To address this issue and avoid race conditions, you should use synchronization mechanisms like a **Mutex** (which stands for **Mut**ually **ex**clusive). Here's an example using a mutex:
 
 ```go
 package main
