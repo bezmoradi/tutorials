@@ -12,17 +12,17 @@ Concurrent programming in many environments is made difficult by the subtleties 
 
 ## Understanding Processes and Threads
 
-Before we dive into goroutines, we need to understand the building blocks of program execution: processes and threads.
+Before we dive into concurrency in Go, we need to understand the building blocks of program execution: processes and threads.
 
 ### What Is a Process?
 
-When you run a program on your computer, the operating system creates a **process** for it. A process is an instance of a running program that has its own isolated memory space. Think of it like a container that holds everything your program needs to run: the code, variables, open files, and more.
-
-Each process is independent and isolated from other processes. For example, if you open two browser windows, you typically have two separate processes running. If one crashes, the other keeps running because they don't share memory.
+When you run a program on your computer, the operating system creates a **process** for it. A process is an instance of a running program that has its own isolated memory space. Think of it like a container that holds everything your program needs to run: the code, variables, open files, and more. Each process is independent and isolated from other processes. For example, if you open two browser windows, you typically have two separate processes running. If one crashes, the other keeps running because they don't share memory.
 
 ### What Is a Thread?
 
-A **thread** is a unit of execution within a process. It's like a worker that executes your code line by line. Every process has at least one thread (the main thread), but can have multiple threads working concurrently.
+A thread is a **software construct**—a unit of execution within a process that is managed by the operating system, not a physical hardware component. Think of it as a virtual worker created and controlled by your OS that executes your code line by line. Every process has at least one thread (the main thread), but can have multiple threads working concurrently.
+
+**Important distinction**: Don't confuse threads (software) with CPU cores (hardware). A CPU core is physical silicon that can execute instructions. Threads are software abstractions that the operating system schedules onto available CPU cores. You can have many more threads than CPU cores—the OS rapidly switches between threads to create the illusion of simultaneous execution.
 
 **Key analogy**: If a process is a restaurant kitchen, threads are the cooks working in that kitchen. They share the same kitchen space (memory) but can work on different tasks simultaneously.
 
