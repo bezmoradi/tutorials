@@ -20,60 +20,52 @@ When you run a program on your computer, the operating system creates a **proces
 
 ### What Is a Thread?
 
-A thread is **software, not hardware**. It's a sequence of instructions stored in memory that gets executed line by line. Think of it as a to-do list that tells the computer what to do step by step.
+A thread is a sequence of instructions stored in memory that gets executed line by line. Think of it as a to-do list that tells the computer what to do step by step. When you run any program, the operating system automatically creates a thred for it. This is called the **main thread**, and it runs your program from start to finish.
 
-**How threads are created:**
+If you want your program to do multiple things at the same time (like downloading a file while updating the screen), you need more than 1 thread. To get additional threads, **you must write code to create them**. The operating system doesn't create extra threads automatically; that's your job as the programmer. So the division is simple:
 
-When you run any program, the operating system automatically creates **1 thread** for it. This is called the **main thread**, and it runs your program from start to finish.
-
-If you want your program to do multiple things at the same time (like downloading a file while updating the screen), you need **more than 1 thread**. To get additional threads, **you must write code to create them**. The operating system doesn't create extra threads automatically; that's your job as the programmer.
-
-So the division is simple:
-- **First thread**: Created automatically by the OS when your program starts
-- **Additional threads**: Created by you when you write code to create them
+-   **First thread**: Created automatically by the OS when your program starts
+-   **Additional threads**: Created by you when you write code to create them
 
 **What happens after threads are created:**
 
-Once threads exist (whether the 1 automatic thread or multiple threads you created), the operating system takes over and manages them. The OS decides which thread runs on which CPU core and switches between threads very quickly.
+Once threads exist (whether the 1 automatic thread or multiple threads you created), the operating system takes over and manages them. The OS decides which thread runs on which CPU core and switches between threads very quickly. Your computer might have 4 CPU cores but your program could have 100 threads. The operating system rapidly switches which threads are running on those 4 cores, giving each thread a turn. This switching happens so fast it feels like all 100 threads are running simultaneously.
 
-**Threads vs CPU cores:**
+### OS Threads vs. Threads
 
-Don't confuse threads with CPU cores. A **CPU core** is physical hardware—the actual silicon chip that executes instructions. A **thread** is just a list of instructions sitting in memory.
+In traditional programming languages (Java, C++, Python, C#), when you create a "thread" in your code, you're creating an **OS thread** an the operating system directly manages these threads, deciding when each one runs and on which CPU core. Characteristics of OS threads:
 
-Your computer might have 4 CPU cores but your program could have 100 threads. The operating system rapidly switches which threads are running on those 4 cores, giving each thread a turn. This switching happens so fast it feels like all 100 threads are running simultaneously.
-
-### OS Threads vs. Threads in Different Contexts
-
-Here's where it gets important for understanding Go:
-
-**In traditional programming languages** (Java, C++, Python, C#):
-
-When you create a "thread" in your code, you're creating an **OS thread** (operating system thread). These terms refer to the same thing. The operating system directly manages these threads, deciding when each one runs and on which CPU core.
-
-Characteristics of OS threads:
-- Created and managed by your operating system (Windows, macOS, Linux)
-- Each OS thread requires significant memory, typically 1-2 MB just for its stack (where function calls and local variables are stored)
-- Creating and switching between OS threads is relatively expensive because it involves the OS kernel
-- You can't create thousands of OS threads without running into memory and performance problems
-
-**In Go:**
+-   Created and managed by your operating system (Windows, macOS, Linux)
+-   Each OS thread requires significant memory, typically 1-2 MB just for its stack (where function calls and local variables are stored)
+-   Creating and switching between OS threads is relatively expensive because it involves the OS kernel
+-   You can't create thousands of OS threads without running into memory and performance problems
 
 Go introduces a different model. When you create a goroutine, you're **not** creating an OS thread. Instead:
 
-- Go creates a small pool of actual OS threads behind the scenes (typically one per CPU core)
-- Goroutines are "user-space threads" managed by Go's runtime scheduler, not the operating system
-- Go's scheduler multiplexes many goroutines onto a few OS threads
-- Each goroutine starts with only 2 KB of stack space (500x smaller than an OS thread)
+-   Go creates a small pool of actual OS threads behind the scenes (typically one per CPU core)
+-   Goroutines are "user-space threads" managed by Go's runtime scheduler, not the operating system
+-   Go's scheduler multiplexes many goroutines onto a few OS threads
+-   Each goroutine starts with only 2 KB of stack space (500x smaller than an OS thread)
 
-This is why we call goroutines "lightweight threads". They're not managed by the OS, they use far less memory, and you can create millions of them without problems.
+This is why we call goroutines "lightweight threads". They're not managed by the OS, they use far less memory, and you can create millions of them without problems. In short:
 
-**The fundamental difference**:
-- **Traditional languages**: 1 thread in your code = 1 OS thread (1-to-1 mapping)
-- **Go**: Many goroutines are multiplexed onto few OS threads (M-to-N mapping)
+-   **Traditional languages**: 1 thread in your code = 1 OS thread (1-to-1 mapping)
+-   **Go**: Many goroutines are multiplexed onto few OS threads (M-to-N mapping meaning many goroutines called M are multiplexed onto fewer OS threads called N)
 
-Think of it like transportation:
-- **OS threads** are like taxis—each person gets their own taxi (expensive, limited by how many you can afford)
-- **Goroutines** are like a bus system—many passengers (goroutines) share a few buses (OS threads), efficiently managed by a dispatcher (Go's scheduler)
+Think of it like transportation: OS threads are like taxis, where each person gets their own taxi which is expensive and limited by how many you can afford whereas goroutines are like a bus system, with many passengers (goroutines) sharing a few buses (OS threads), efficiently managed by a dispatcher, which in this case is Go's scheduler.
+
+### What Do Threads Actually Execute?
+
+If you write code in Go, what language does the thread execute? The answer is that threads don't execute any programming language. They execute machine code. Here's what happens when you run a Go program:
+
+1. **You write Go code**: Your program is written in the Go programming language with functions, variables, and logic
+2. **Go compiler translates it**: The Go compiler converts your Go code into **machine code** (binary instructions like 0s and 1s that the CPU understands directly)
+3. **OS creates a thread**: When you run the program, the operating system creates a thread, which is just a data structure containing a pointer to where the machine code starts and some memory for the program to use
+4. **Thread executes machine code**: The thread doesn't "run Go code." It runs the machine code that was compiled from your Go code
+
+**The simple version**: Your Go code gets translated into machine code (CPU instructions), and threads execute that machine code. The thread itself has no language—it's just the OS's way of organizing and running those CPU instructions.
+
+This is true for all programming languages. Whether you write in Go, Python, Java, or C++, your code gets converted to machine code, and threads execute that machine code.
 
 ## What Is A Goroutine?
 
