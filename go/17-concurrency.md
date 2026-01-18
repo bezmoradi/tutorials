@@ -67,7 +67,11 @@ A thread is not software that "knows" how to execute instructions; it's simply a
 
 ## What Is A Goroutine?
 
-A goroutine is a lightweight thread managed by the Go runtime. Goroutines allow your program to run functions concurrently—think of them as different tasks running simultaneously within a program. This lets you handle multiple operations without waiting for each one to finish before starting the next. Unlike OS threads which typically require 1-2 MB of stack space, goroutines start with only 2 KB and can grow as needed. This means you can easily run thousands or even millions of goroutines in a single program, making Go exceptionally efficient for concurrent workloads. Let's see a practical example that demonstrates the power of goroutines:
+A goroutine is a lightweight thread managed by the Go runtime. Goroutines allow your program to run functions concurrently—think of them as different tasks running simultaneously within a program. This lets you handle multiple operations without waiting for each one to finish before starting the next. Unlike OS threads which typically require 1-2 MB of stack space, goroutines start with only 2 KB and can grow as needed. This means you can easily run thousands or even millions of goroutines in a single program, making Go exceptionally efficient for concurrent workloads.
+
+## An Introduction to `WaitGroup`
+
+`WaitGroup` from the `sync` package gives us the ability to create goroutines and wait for them to complete:
 
 ```go
 package main
@@ -111,117 +115,66 @@ When you run this program, you'll see output like:
 Active goroutines: 3
 Task 2 completed
 Task 1 completed
-Total time: 2s
+Total time: 2.001272667s
+Active goroutines: 1
 ```
 
-**What's happening here:**
+`wg` is defined at the package level simply because we need to have access to it inside different functions. The way it works is that at the end of the `main` function we call `wg.Wait()` meaning the program must wait until all goroutines are done.
 
-1. **We create 2 goroutines** by using the `go` keyword before calling `processTask`
-2. **`runtime.NumGoroutine()` prints 3** because we have the main goroutine plus the 2 we created
-3. **Tasks run concurrently** - Task 1 takes 2 seconds and Task 2 takes 1 second, but they run at the same time
-4. **Total time is ~2 seconds**, not 3 seconds (which would be the case if they ran sequentially)
+To turn function calls into goroutines, we prepend them with the `go` keyword. Since we have two goroutines that we need to wait for, at the very beginning of our `main` function we call `wg.Add(2)`, which tells Go to wait for 2 goroutines to complete.
 
-This demonstrates the key benefit of goroutines: when you have multiple independent tasks, they can run concurrently instead of waiting for each other. Task 2 finishes first (after 1 second) because it's shorter, even though we started Task 1 first.
+As a last step, inside `processTask` we need to call `wg.Done()` to signal to the `WaitGroup` that the current function is done.
 
-Without goroutines, if we called these functions normally, the total time would be 3 seconds because each task would wait for the previous one to finish.
+It's best practice to always call `wg.Add()` before launching the goroutine to avoid race conditions. Also, consider using `defer wg.Done()` as the first line in your goroutine to ensure it's always called even if the function panics.
 
-## An Introduction to `WaitGroup`
+Let's analyze the program:
 
-`WaitGroup` from the `sync` package gives us the ability to create goroutines and wait for them to complete:
+1. We create 2 goroutines by using the `go` keyword before calling `processTask`
+2. The first `runtime.NumGoroutine()` prints 3 because we have the main goroutine plus the 2 we created
+3. Tasks run concurrently; Task 1 takes 2 seconds and Task 2 takes 1 second, but they run at the same time
+4. Total time is ~2 seconds, not 3 seconds (which would be the case if they ran sequentially)
+5. As the two Go routines are completed, the second `runtime.NumGoroutine()` prints 1 because we only have the main goroutine
+
+This demonstrates the key benefit of goroutines: when you have multiple independent tasks, they can run concurrently instead of waiting for each other. Task 2 finishes first (after 1 second) because it's shorter, even though we started Task 1 first. Without goroutines, if we called these functions normally, the total time would be 3 seconds because each task would wait for the previous one to finish. Let's validate that in action:
 
 ```go
 package main
 
 import (
 	"fmt"
-	"sync"
+	"runtime"
+	"time"
 )
 
-var wg sync.WaitGroup
-
-func sayHi() {
-	fmt.Println("Hi")
-	wg.Done()
-}
-
-func sayBye() {
-	fmt.Println("Bye")
-	wg.Done()
-}
-
 func main() {
-	wg.Add(2)
 
-	go sayHi()
-	go sayBye()
+	start := time.Now()
 
-	wg.Wait()
+	processTask("Task 1", 2)
+	processTask("Task 2", 1)
+
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+
+	elapsed := time.Since(start)
+	fmt.Printf("Total time: %v\n", elapsed)
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+}
+
+func processTask(name string, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	fmt.Printf("%s completed\n", name)
 }
 ```
 
-In the above program, we have created an instance of `WaitGroup` on this line:
+When you run this program, you'll see output like:
 
-```go
-var wg sync.WaitGroup
+```text
+Task 1 completed
+Task 2 completed
+Active goroutines: 1
+Total time: 3.001641834s
+Active goroutines: 1
 ```
-
-It's defined at the package level simply because we need to have access to it inside different functions. The way it works is that at the end of the `main` function we call `wg.Wait()` meaning the program must wait until all goroutines are done.
-
-To turn function calls into goroutines, we prepend them with the `go` keyword. Since we have two goroutines that we need to wait for, at the very beginning of our `main` function we call `wg.Add(2)`, which tells Go to wait for 2 goroutines to complete.
-
-As a last step, inside those functions we need to call `wg.Done()` to signal to the `WaitGroup` that the current function is done.
-
-**Best practice**: Always call `wg.Add()` before launching the goroutine to avoid race conditions. Also, consider using `defer wg.Done()` as the first line in your goroutine to ensure it's always called even if the function panics.
-
-The `runtime` package includes some useful functions to understand what's happening behind the scenes, and one of them is `NumGoroutine()`:
-
-```go
-
-func main() {
-	wg.Add(2)
-
-	go sayHi()
-	go sayBye()
-
-	fmt.Println(runtime.NumGoroutine()) // Prints 3
-
-	wg.Wait()
-}
-```
-
-If we execute our code, the `NumGoroutine` function prints 3 because we have a goroutine for the `main` function, one for the `sayHi` function, and one for the `sayBye` function.
-
-The place we call `NumGoroutine` determines what the output will be. To experiment, let's change the above code as follows:
-
-```go
-func main() {
-	wg.Add(2)
-
-	fmt.Println(runtime.NumGoroutine()) // Prints 1
-
-	go sayHi()
-	go sayBye()
-
-	wg.Wait()
-}
-```
-
-Since we have one goroutine for the `main` function and `NumGoroutine` is called before launching the other goroutines, it outputs 1. As another experiment, let's update the code once more by placing the `NumGoroutine` call all the way to the bottom of the `main` function:
-
-```go
-func main() {
-	wg.Add(2)
-
-	go sayHi()
-	go sayBye()
-
-	wg.Wait()
-
-	fmt.Println(runtime.NumGoroutine()) // Prints 1
-}
-```
-
-It prints 1 because `wg.Wait()` waits for all custom-made goroutines to complete, then the next line is executed. Since we are still inside the `main` function and each Go program has at least one goroutine for that function, it outputs 1.
 
 ## Channels
 
