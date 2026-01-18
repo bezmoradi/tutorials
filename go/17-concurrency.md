@@ -1036,11 +1036,10 @@ func processTask() {
 }
 ```
 
-Each time you run the above program, you would get a different result in the terminal.
-
-## Diagram
+Each time you run the above program, you would get a different result in the terminal. We can visualize what's happening as follows:
 
 ```mermaid
+%%{init: {'sequence': {'mirrorActors': false}}}%%
 sequenceDiagram
     participant M as Memory
     participant G1 as Goroutine 1
