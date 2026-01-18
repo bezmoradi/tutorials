@@ -20,13 +20,27 @@ When you run a program on your computer, the operating system creates a **proces
 
 ### What Is a Thread?
 
-A thread is **software, not hardware**. It's a sequence of instructions that your operating system manages and executes. Think of it as a to-do list that tells the computer what to do step by step.
+A thread is **software, not hardware**. It's a sequence of instructions stored in memory that gets executed line by line. Think of it as a to-do list that tells the computer what to do step by step.
 
-Every process has at least one thread (the main thread), but can have multiple threads running at the same time. Each thread executes code line by line.
+**How threads are created:**
 
-**Threads vs CPU cores**: A CPU core is the actual physical hardware that runs code. Threads are just lists of instructions in memory. Your operating system takes these thread instructions and assigns them to CPU cores. You can have 100 threads but only 4 CPU cores—the OS just switches between threads very quickly, giving each one a turn on the available cores.
+When you run any program, the operating system automatically creates **1 thread** for it. This is called the **main thread**, and it runs your program from start to finish.
 
-**Key analogy**: If a process is a restaurant kitchen, threads are the cooks working in that kitchen. They share the same kitchen space (memory) but can work on different tasks simultaneously.
+If you want your program to do multiple things at the same time (like downloading a file while updating the screen), you need **more than 1 thread**. To get additional threads, **you must write code to create them**. The operating system doesn't create extra threads automatically; that's your job as the programmer.
+
+So the division is simple:
+- **First thread**: Created automatically by the OS when your program starts
+- **Additional threads**: Created by you when you write code to create them
+
+**What happens after threads are created:**
+
+Once threads exist (whether the 1 automatic thread or multiple threads you created), the operating system takes over and manages them. The OS decides which thread runs on which CPU core and switches between threads very quickly.
+
+**Threads vs CPU cores:**
+
+Don't confuse threads with CPU cores. A **CPU core** is physical hardware—the actual silicon chip that executes instructions. A **thread** is just a list of instructions sitting in memory.
+
+Your computer might have 4 CPU cores but your program could have 100 threads. The operating system rapidly switches which threads are running on those 4 cores, giving each thread a turn. This switching happens so fast it feels like all 100 threads are running simultaneously.
 
 ### OS Threads vs. Threads in Different Contexts
 
