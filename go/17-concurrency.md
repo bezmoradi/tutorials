@@ -1040,40 +1040,17 @@ Each time you run the above program, you would get a different result in the ter
 
 ## Diagram
 
-To understand why race conditions happen, we need to realize that `counter++` is not a single operation. It's actually three separate steps:
-
-1. **Read** the current value of `counter` from memory
-2. **Add** 1 to that value
-3. **Write** the new value back to memory
-
-When two goroutines execute these steps at the same time without synchronization, they can interfere with each other:
-
 ```mermaid
 sequenceDiagram
-    participant M as Memory (counter = 0)
+    participant M as Memory
     participant G1 as Goroutine 1
     participant G2 as Goroutine 2
 
-    Note over M,G2: Both goroutines execute counter++
-
-    G1->>M: Read counter (gets 0)
-    G2->>M: Read counter (gets 0)
-
-    Note over G1: Calculate: 0 + 1 = 1
-    Note over G2: Calculate: 0 + 1 = 1
-
-    G1->>M: Write 1 to counter
-    G2->>M: Write 1 to counter
-
-    Note over M: Final value: 1 (Expected: 2!)
-    Note over M,G2: Lost update! One increment was lost
+    G1->>M: Read (0)
+    G2->>M: Read (0)
+    G1->>M: Write (1)
+    G2->>M: Write (1)
 ```
-
-**What went wrong:**
-
-Both goroutines read `counter` when it was 0. They both calculated 0 + 1 = 1 and wrote 1 back to memory. The result is that `counter` is 1 instead of 2, even though we incremented it twice. One update was completely lost.
-
-This is why we get unpredictable results. Sometimes the operations interleave this way (losing updates), and sometimes they don't. The timing depends on how the OS scheduler runs the goroutines, which changes every time you run the program.
 
 Go's runtime includes a race detector that helps identify such issues during development. The race detector can be enabled by using the `-race` flag when compiling or running a Go program:
 
