@@ -58,18 +58,16 @@ Think of it like transportation: OS threads are like taxis, where each person ge
 
 If you write code in Go, what language does the thread execute? The answer is that threads don't execute any programming language. They execute machine code. Here's what happens when you run a Go program:
 
-1. **You write Go code**: Your program is written in the Go programming language with functions, variables, and logic
+1. **You write Go code**: Your program is written in the Go programming language with functions, variables, and some logic
 2. **Go compiler translates it**: The Go compiler converts your Go code into **machine code** (binary instructions like 0s and 1s that the CPU understands directly)
-3. **OS creates a thread**: When you run the program, the operating system creates a thread, which is just a data structure containing a pointer to where the machine code starts and some memory for the program to use
-4. **Thread executes machine code**: The thread doesn't "run Go code." It runs the machine code that was compiled from your Go code
+3. **OS creates a thread**: When you run the program, the operating system creates a thread, which is just a data structure containing a pointer to where the machine code starts and some memory for the program to use. Think of a thread as just a worker inside your computer. It's not a program or a language; it's more like a little machine that can follow instructions (it remembers where it left off in your program, which instruction to run next, carries function call history and temporary variables etc)
+4. **Thread executes machine code**: The thread doesn't "run Go code". The thread is the container that the OS uses to execute that machine code
 
-**The simple version**: Your Go code gets translated into machine code (CPU instructions), and threads execute that machine code. The thread itself has no language—it's just the OS's way of organizing and running those CPU instructions.
-
-This is true for all programming languages. Whether you write in Go, Python, Java, or C++, your code gets converted to machine code, and threads execute that machine code.
+A thread is not software that "knows" how to execute instructions; it's simply a data structure that the OS maintains, holding the program counter (where it is in the code), the stack (temporary memory for function calls), CPU register values, and other bookkeeping information. When we say a thread "runs code", it doesn't actually interpret or understand the instructions; the CPU does the actual work by reading the machine code and performing operations like adding numbers or jumping to memory addresses. The thread merely provides the context and pointer so the CPU knows which instructions to execute and where to find the necessary data, much like a DVD tray holds a disc while the DVD player reads and displays the movie.
 
 ## What Is A Goroutine?
 
-A goroutine is a lightweight thread managed by the Go runtime, and goroutines allow your program to run functions concurrently. Think of them as different tasks running simultaneously within a program, letting you handle multiple requests or perform various operations without waiting for each one to finish before starting the next. Unlike OS threads which typically require 1-2 MB of stack space, goroutines start with only 2 KB and can grow as needed. This means you can easily run thousands or even millions of goroutines in a single program, making Go exceptionally efficient for concurrent workloads.
+A goroutine is a lightweight thread managed by the Go runtime. Goroutines allow your program to run functions concurrently—think of them as different tasks running simultaneously within a program. This lets you handle multiple operations without waiting for each one to finish before starting the next. Unlike OS threads which typically require 1-2 MB of stack space, goroutines start with only 2 KB and can grow as needed. This means you can easily run thousands or even millions of goroutines in a single program, making Go exceptionally efficient for concurrent workloads. Let's see a practical example that demonstrates the power of goroutines:
 
 ```go
 package main
@@ -77,18 +75,59 @@ package main
 import (
 	"fmt"
 	"runtime"
+	"sync"
+	"time"
 )
 
+var wg = sync.WaitGroup{}
+
 func main() {
-	fmt.Println(runtime.NumGoroutine()) // Prints 1
+	wg.Add(2)
+
+	start := time.Now()
+
+	go processTask("Task 1", 2)
+	go processTask("Task 2", 1)
+
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+
+	wg.Wait()
+
+	elapsed := time.Since(start)
+	fmt.Printf("Total time: %v\n", elapsed)
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+}
+
+func processTask(name string, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	fmt.Printf("%s completed\n", name)
+	wg.Done()
 }
 ```
 
-At the very beginning of the `main` function, there won't be any additional goroutines created by your code, so typically, you'll see only one goroutine, which is the main goroutine running the `main` function itself.
+When you run this program, you'll see output like:
+
+```text
+Active goroutines: 3
+Task 2 completed
+Task 1 completed
+Total time: 2s
+```
+
+**What's happening here:**
+
+1. **We create 2 goroutines** by using the `go` keyword before calling `processTask`
+2. **`runtime.NumGoroutine()` prints 3** because we have the main goroutine plus the 2 we created
+3. **Tasks run concurrently** - Task 1 takes 2 seconds and Task 2 takes 1 second, but they run at the same time
+4. **Total time is ~2 seconds**, not 3 seconds (which would be the case if they ran sequentially)
+
+This demonstrates the key benefit of goroutines: when you have multiple independent tasks, they can run concurrently instead of waiting for each other. Task 2 finishes first (after 1 second) because it's shorter, even though we started Task 1 first.
+
+Without goroutines, if we called these functions normally, the total time would be 3 seconds because each task would wait for the previous one to finish.
 
 ## An Introduction to `WaitGroup`
 
-`WaitGroup` from the `sync` package gives us the ability to create goroutines and wait for them to complete.
+`WaitGroup` from the `sync` package gives us the ability to create goroutines and wait for them to complete:
 
 ```go
 package main
