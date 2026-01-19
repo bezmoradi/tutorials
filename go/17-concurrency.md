@@ -20,7 +20,7 @@ When you run a program on your computer, the operating system creates a **proces
 
 ### What Is a Thread?
 
-A thread is a sequence of instructions stored in memory that gets executed line by line. Think of it as a to-do list that tells the computer what to do step by step. When you run any program, the operating system automatically creates a thred for it. This is called the **main thread**, and it runs your program from start to finish.
+A thread is a sequence of instructions stored in memory that gets executed line by line. Think of it as a to-do list that tells the computer what to do step by step. When you run any program, the operating system automatically creates a thread for it. This is called the **main thread**, and it runs your program from start to finish.
 
 If you want your program to do multiple things at the same time (like downloading a file while updating the screen), you need more than 1 thread. To get additional threads, **you must write code to create them**. The operating system doesn't create extra threads automatically; that's your job as the programmer. So the division is simple:
 
@@ -396,9 +396,15 @@ As shown above, even with only one processor, I/O-bound operations can achieve s
 
 ## Channels
 
-Channels are the pipes that connect concurrent goroutines. You can send values into channels from one goroutine and receive those values in another goroutine.
+Channels are a communication mechanism between goroutines. One goroutine can send data to a channel, and another goroutine can receive that data. Channels help goroutines work together by passing values directly, so they can share results or signals in a safe and organized way without accessing the same data at the same time. In Go, channels are the preferred way to share data between goroutines. As the Go documentation says: "Do not communicate by sharing memory; instead, share memory by communicating." In Go, channels come in two forms: unbuffered channels and buffered channels. The difference between them is how much coordination they enforce between goroutines.
 
-**Key concept**: Unbuffered channels are blocking—they require both a sender and receiver to be ready simultaneously. In the following program, we are creating a channel called `c` which can hold any value of type `int`, then in the next line we are adding `78` to our channel and this is the line where our channel blocks.
+**Unbuffered Channels**: An unbuffered channel has no capacity to hold values. A send on the channel **blocks** until another goroutine is ready to receive the value, and a receive blocks until a sender is ready. Because of this behavior, unbuffered channels provide strong synchronization guarantees: when a send completes, you know another goroutine has received the value. This makes them ideal for signaling, coordination, and hand-off style communication where timing matters.
+
+An unbuffered channel only lets one value be passed at a time, and the sender must wait until another goroutine is ready to receive it. This means both sides meet at the same moment to exchange the value, like handing something directly to another person. A buffered channel, on the other hand, can hold a few values in advance, so a sender can drop a value into the channel and continue working even if no one is receiving yet. In short, unbuffered channels force goroutines to wait for each other, while buffered channels let them work more independently.
+
+**Buffered Channels**: A buffered channel has a fixed capacity and can hold a limited number of values. A send only blocks when the buffer is full, and a receive only blocks when the buffer is empty. Buffered channels decouple senders and receivers in time. This can improve throughput and reduce blocking when goroutines produce or consume data at different speeds. However, buffering weakens synchronization guarantees: a successful send only means the value was placed in the buffer, not that another goroutine has observed it yet. Conceptually, a buffered channel represents a queue between goroutines.
+
+In the following program, we are creating a channel called `c` which can hold any value of type `int`, then in the next line we are adding `78` to our channel:
 
 ```go
 package main
@@ -425,15 +431,9 @@ main.main()
 exit status 2
 ```
 
-This error occurs because you're trying to send a value into a channel but there's no goroutine (concurrent function) ready to receive it.
+This error occurs because we're trying to send a value into a channel but there's no goroutine (concurrent function) ready to receive it. When you create a channel as in `make(chan int)`, it's an **unbuffered channel**, meaning it requires both a sender and a receiver to be ready simultaneously for communication. This is a synchronization point; the sender blocks until a receiver is ready, and the receiver blocks until a sender is ready. When we execute `c <- 78`, the main goroutine tries to send 78 into the channel, but since there's no other goroutine ready to receive from it, the program deadlocks. All goroutines are blocked waiting for something that will never happen. To fix this issue, you have two options:
 
-**Why this happens**: When you create a channel with `c := make(chan int)`, it's an **unbuffered channel**, meaning it requires both a sender and a receiver to be ready simultaneously for communication. This is a synchronization point—the sender blocks until a receiver is ready, and the receiver blocks until a sender is ready.
-
-When you execute `c <- 78`, the main goroutine tries to send 78 into the channel, but since there's no other goroutine ready to receive from it, the program deadlocks. All goroutines are blocked waiting for something that will never happen.
-
-To fix this issue, you have two options:
-
-**Option 1: Use Goroutines** - Create a separate goroutine to send the value into the channel while the main goroutine is waiting to receive it.
+**Option 1: Use Goroutines**: Create a separate goroutine to send the value into the channel while the main goroutine is waiting to receive it:
 
 ```go
 package main
@@ -451,7 +451,9 @@ func main() {
 }
 ```
 
-**Option 2: Buffered Channel** - Create a buffered channel that can hold one value without requiring the sender and receiver to be ready simultaneously.
+In our above fix, algorithm is an anonymous function which is marked by the `go` keyword.
+
+**Option 2: Buffered Channel**: Create a buffered channel that can hold one value without requiring the sender and receiver to be ready simultaneously:
 
 ```go
 package main
@@ -459,13 +461,17 @@ package main
 import "fmt"
 
 func main() {
-	c := make(chan int, 1) // Buffer size of 1
+	c := make(chan int, 1)
 
-	c <- 78 // Doesn't block because buffer has space
+	c <- 78
 
 	fmt.Println(<-c) // Receives from buffer
 }
 ```
+
+The above fix demonstrates a buffered channel with a capacity of 1. First, it creates a channel `c` that can hold one integer value. Then it sends the number 78 into the channel with `c <- 78`. This doesn't block because the channel has space to store that value; think of it like a mailbox that can hold one letter and you can drop the letter in immediately without waiting for someone to take it. Finally, `fmt.Println(<-c)` reads the value from the channel and prints it. Since the channel only had one value in its buffer, this operation retrieves that value and empties the buffer.
+
+If we increase the buffer size of the channel, say from 1 to 3 (`make(chan int, 3)`), the channel can now hold more values before blocking the sender. This means you could send up to 3 values into the channel one after another without any goroutine waiting for a receiver. Only when you try to send a fourth value will the sender block until a receiver takes at least one value out. Think of it like a bigger mailbox: a mailbox with space for 3 letters lets you drop in 3 letters quickly, but if it’s full, you have to wait for someone to pick one up before adding more.
 
 Both of these solutions prevent the deadlock. The first uses concurrency (goroutines), while the second uses buffering to decouple sending and receiving.
 
@@ -1041,9 +1047,9 @@ Each time you run the above program, you would get a different result in the ter
 ```mermaid
 %%{init: {'sequence': {'mirrorActors': false}}}%%
 sequenceDiagram
-    participant M as Memory
-    participant G1 as Goroutine 1
-    participant G2 as Goroutine 2
+    participant M as Memory (counter)
+    participant G1 as Goroutine 1 (processTask)
+    participant G2 as Goroutine 2 (processTask)
 
     G1->>M: Read (0)
     G2->>M: Read (0)
