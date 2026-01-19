@@ -564,12 +564,10 @@ func main() {
 }
 ```
 
-This fixed the deadlock, but now we have another issue—nothing is outputted in the terminal. The reason you don't see any output is that the `main` function finishes execution before the goroutines `sender` and `receiver` get a chance to execute. In Go, the `main` function **doesn't wait** for goroutines to finish by default.
+This fixed the deadlock, but now we have another issue; nothing is outputted in the terminal. The reason you don't see any output is that the `main` function finishes execution before the goroutines `sender` and `receiver` get a chance to execute. In Go, the `main` function **doesn't wait** for goroutines to finish by default. To fix this, we have two options:
 
-To fix this, we have two options:
-
-1. **Use `WaitGroup`** to wait for both goroutines to complete
-2. **Remove the `go` keyword from `receiver`** - The `receiver` function will then run in the `main` goroutine and block until a value is available on the channel. If a value is already sent by the `sender` goroutine, it proceeds; otherwise, it blocks until a value is sent.
+-   Use `WaitGroup` to wait for both goroutines to complete
+-   Remove the `go` keyword from `receiver` then it will run in the `main` goroutine and block until a value is available on the channel. If a value is already sent by the `sender` goroutine, it proceeds; otherwise, it blocks until a value is sent.
 
 The second option is simpler for this example:
 
@@ -579,6 +577,29 @@ func main() {
 
 	go sender(c)  // Runs concurrently
 	receiver(c)   // Blocks main until it receives a value
+}
+```
+
+Also, as a third option, we can rewrite the program and turn our channel from unbuffered to buffered:
+
+```go
+package main
+
+import "fmt"
+
+func sender(c chan<- int) {
+	c <- 7
+}
+
+func receiver(c <-chan int) {
+	fmt.Println(<-c)
+}
+
+func main() {
+	c := make(chan int, 1)
+
+	sender(c)
+	receiver(c)
 }
 ```
 
@@ -631,7 +652,7 @@ main.main()
 exit status 2
 ```
 
-In the above code, the `range` loop iterates over the channel until it's closed. The problem here is that we have not explicitly closed our channel, that's why `range` keeps waiting for more values even though there are no more values to send, and we get a deadlock error. To fix this, we need to close our channel when we are done sending values:
+In the above code, the `range` loop iterates over the channel until it's closed. The problem here is that we have not explicitly closed our channel that's why `range` keeps waiting for more values even though there are no more values to send, and we get a deadlock error. To fix this, we need to close our channel when we are done sending values:
 
 ```go
 go func() {
@@ -661,13 +682,13 @@ program existed successfully
 
 ## How to Use Channels with `select` Statement
 
-The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While `switch` works with multiple expressions to determine the flow of control, `select` deals with communication operations on channels.
-
-**Key characteristics**:
+The `select` statement in Go is similar to a `switch` statement, but it's designed specifically for communication between goroutines via channels. While `switch` works with multiple expressions to determine the flow of control, `select` deals with communication operations on channels. The key characteristics of `select` are as follows:
 
 -   A `select` statement allows you to wait on multiple channel operations simultaneously
 -   If none of the channels are ready, the `select` statement blocks until at least one of the channels is ready to proceed
 -   If multiple channels are ready, Go randomly selects one (this prevents starvation)
+
+Let's see how we can implement select:
 
 ```go
 package main
@@ -677,21 +698,13 @@ import (
 	"time"
 )
 
-func create(even, odd chan<- int, quit chan<- bool) {
-	for i := 0; i < 10; i++ {
-		if i%2 == 0 {
-			time.Sleep(time.Second * 1)
-			even <- i
-		} else {
-			time.Sleep(time.Second * 3)
-			odd <- i
-		}
-	}
+func main() {
+	even := make(chan int)
+	odd := make(chan int)
+	quit := make(chan bool)
 
-	quit <- true
-}
+	go create(even, odd, quit)
 
-func show(even, odd <-chan int, quit <-chan bool) {
 	for {
 		select {
 		case e := <-even:
@@ -706,13 +719,18 @@ func show(even, odd <-chan int, quit <-chan bool) {
 	}
 }
 
-func main() {
-	even := make(chan int)
-	odd := make(chan int)
-	quit := make(chan bool)
+func create(even, odd chan<- int, quit chan<- bool) {
+	for i := 0; i < 10; i++ {
+		if i%2 == 0 {
+			time.Sleep(time.Second * 1)
+			even <- i
+		} else {
+			time.Sleep(time.Second * 3)
+			odd <- i
+		}
+	}
 
-	go create(even, odd, quit)
-	show(even, odd, quit)
+	quit <- true
 }
 ```
 
@@ -722,7 +740,26 @@ In the above program, the `select` statement listens to three channels: `even`, 
 -   If a value is received from the `odd` channel, it prints it as an odd number
 -   If a value is received from the `quit` channel, it prints "Done" and exits the `show` function
 
-**Important**: The `select` statement doesn't operate on values like a `switch` statement does. Instead, it chooses which channel operation to proceed with based on the readiness of the channels involved. It's a powerful construct for handling concurrent communication between goroutines.
+A `select` statement is like a traffic controller for channels. Imagine you have multiple channels sending signals, but you don't know which one will be ready first. `select` waits for one of the channels to be ready and then runs the code for that channel. It doesn't care about the values themselves; it just looks for "which channel is ready to send or receive?" and picks one. If multiple channels are ready at the same time, Go picks one **randomly**. This makes it easy to handle multiple streams of data without blocking your program.
+
+Previously we mentioned that if multiple channels are ready, Go randomly selects one:
+
+```go
+select {
+case e := <-even:
+	fmt.Println("Even:", e)
+case e := <-even:
+	fmt.Println("Even #2:", e)
+case o := <-odd:
+	fmt.Println("Odd:", o)
+case q := <-quit:
+	fmt.Println("Done", q)
+
+	return
+}
+```
+
+In Go, a `select` statement chooses which channel operation to execute based on which channels are ready, not based on the order of the cases in the code. In the following example, we have two case statements reading from the same `<-even` channel. When a value is available on that channel, both cases are eligible, and the Go runtime **randomly** picks one to execute. This is why sometimes "Even:" is printed and other times "Even #2:" is printed. The key idea is that select does not prioritize cases or guarantee any specific order; it only picks one ready case at random. This behavior allows a program to handle multiple channels concurrently without blocking, but you should not rely on the order of execution when multiple cases could proceed.
 
 ## Another Example of Channels in Go
 
@@ -753,9 +790,7 @@ func slowGreet(phrase string) {
 }
 ```
 
-We won't be able to see the output of the last `greet()` invocation right away because the previous function (`slowGreet()`) takes 3 seconds to complete.
-
-To tackle this issue and run all functions concurrently, we need to use the `go` keyword as follows:
+We won't be able to see the output of the last `greet()` invocation right away because the previous function (`slowGreet()`) takes 3 seconds to complete. To tackle this issue and run all functions concurrently, we need to use the `go` keyword as follows:
 
 ```go
 func main() {
@@ -766,13 +801,7 @@ func main() {
 }
 ```
 
-But if we run the program now, we won't see any output in the terminal and the program exits right away.
-
-**Why this happens**: By adding the `go` keyword, you tell Go that you want to run those functions as goroutines, which means they will run concurrently instead of one after the other. The idea behind running a function as a goroutine is that it will run in a non-blocking way, so the next function can immediately be invoked.
-
-The reason the program exits right away is that the `main()` function does not wait for goroutines to complete. The `main()` function dispatches the goroutines and immediately continues to the end of the function, at which point the program exits.
-
-The solution to this problem is to use channels or `WaitGroup` to synchronize. Simply put, a channel is a value that can be used as a communication mechanism when working with goroutines:
+But if we run the program now, we won't see any output in the terminal and the program exits right away because by adding the `go` keyword, you tell Go that you want to run those functions as goroutines, which means they will run concurrently instead of one after the other. The idea behind running a function as a goroutine is that it will run in a non-blocking way, so the next function can immediately be invoked. The reason the program exits right away is that the `main()` function does not wait for goroutines to complete and it dispatches the goroutines and immediately continues to the end of the function, at which point the program exits. The solution to this problem is to use `chan` or `WaitGroup` to synchronize:
 
 ```go
 func main() {
@@ -785,21 +814,17 @@ func slowGreet(phrase string, doneChannel chan bool) {
 	time.Sleep(3 * time.Second)
 	fmt.Println("Hi", phrase)
 
-	doneChannel <- true // The <- points to the direction that the flag should flow
+	doneChannel <- true
 }
 ```
 
-This channel lets Go know whether the function process is done or not.
-
-When the `slowGreet()` function completes, it sends a flag through its channel to the place where we started the goroutine, which is the following line:
+This channel lets Go know whether the function process is done or not. When the `slowGreet()` function completes, it sends a flag through its channel to the place where we started the goroutine, which is the following line:
 
 ```go
-go slowGreet("How ... are ... you ... ?")
+go slowGreet("How ... are ... you ... ?", done)
 ```
 
-Go will exit only after data comes out of the channel on this line `<-done`. This is a **blocking receive**—the program waits at this line until the channel receives a value.
-
-We can also place the received value inside `fmt.Println(<-done)` or simply use `<-done` to wait without printing.
+Go will exit only after data comes out of the channel on this line `<-done`. This is a **blocking receive** meaning the program waits at this line until the channel receives a value (We can also place the received value inside `fmt.Println(<-done)` or simply use `<-done` to wait without printing.)
 
 We can use a single channel for multiple goroutines. To do that, we must ensure the channel is created before launching any goroutine and that all goroutines accept the channel as a parameter:
 
@@ -837,9 +862,7 @@ func greet(phrase string, doneChannel chan bool) {
 
 ```
 
-Keep in mind that we can use the same channel for multiple goroutines because channels are designed to be communication devices that can receive multiple values.
-
-However, if we run the above program, we will get unpredictable results:
+Keep in mind that we can use the same channel for multiple goroutines because channels are designed to be communication devices that can receive multiple values. However, if we run the above program, we will get unpredictable results:
 
 ```text
 Hi Last call
@@ -853,7 +876,7 @@ Hi First call
 Hi Second call
 ```
 
-The reason we're getting this unpredictable result is that **we're only waiting for one channel value** even though we launched four goroutines. The program exits as soon as the first goroutine sends its value to the channel. To tackle this issue, we need to wait for all four goroutines:
+The reason we're getting this unpredictable result is that we're only waiting for **one channel value** even though we launched four goroutines. The program exits as soon as the first goroutine sends its value to the channel. To tackle this issue, we need to wait for all four goroutines:
 
 ```go
 func main() {
@@ -880,86 +903,9 @@ Hi First call
 Hi Delayed call
 ```
 
-**Note on output order**: The order of the output doesn't match the order of function calls. This is because all those goroutines execute concurrently, and the output reflects the completion order. The `greet()` function call with `Last call` might finish way sooner than the one with `First call` because goroutines are scheduled independently.
+The order of the output doesn't match the order of function calls. This is because all those goroutines execute concurrently, and the output reflects the completion order. The `greet()` function call with `Last call` might finish way sooner than the one with `First call` because goroutines are scheduled independently.
 
-**Rule of thumb**: If you use the same channel for multiple goroutines, you must wait for as many values as you have goroutines.
-
-**Problem with this approach**: This way of handling goroutines is not scalable and is error-prone because you might forget to match the number of receives with the number of goroutines. There are better alternatives:
-
-```go
-func main() {
-	dones := make([]chan bool, 4)
-
-	dones[0] = make(chan bool)
-	go greet("First call", dones[0])
-
-	dones[1] = make(chan bool)
-	go greet("Second call", dones[1])
-
-	dones[2] = make(chan bool)
-	go slowGreet("Delayed call", dones[2])
-
-	dones[3] = make(chan bool)
-	go greet("Last call", dones[3])
-
-	for _, done := range dones {
-		<-done
-	}
-}
-```
-
-The above approach is better than manually writing multiple `<-done` statements, but it's still not ideal. **The recommended approach is to use `WaitGroup`** (shown earlier in this tutorial) or to use a `for range` loop over the channel:
-
-```go
-func main() {
-	done := make(chan bool)
-	go greet("First call", done)
-	go greet("Second call", done)
-	go slowGreet("Delayed call", done)
-	go greet("Last call", done)
-
-	for isDone := range done {
-		fmt.Println(isDone)
-	}
-}
-```
-
-As shown above, we can loop through the channel, but in the output we will get an error:
-
-```text
-Hi First call
-Hi Last call
-true
-true
-Hi Second call
-true
-Hi Delayed call
-true
-fatal error: all goroutines are asleep - deadlock!
-
-goroutine 1 [chan receive]:
-main.main()
-	/Users/behzadmoradi/Documents/projects/go-tmp/main.go:15 +0x184
-exit status 2
-```
-
-We get this error because Go does not know when the channel is out of values. The `for range` loop keeps waiting for new values to be sent, but eventually there are no more values, resulting in a deadlock.
-
-**Antipattern - Don't do this**: Closing the channel in the function that finishes last:
-
-```go
-func slowGreet(phrase string, doneChannel chan bool) {
-	time.Sleep(3 * time.Second)
-	fmt.Println("Hi", phrase)
-
-	doneChannel <- true
-	close(doneChannel) // BAD: Assumes this finishes last
-}
-```
-
-**Why this is bad**: This only works if you know for certain which operation takes longest, and it's fragile—any change to timing breaks the code.
-
-**Better approach**: Use `WaitGroup` instead:
+As a rule of thumb, if you use the same channel for multiple goroutines, you must wait for as many values as you have goroutines. Bear in mind that this way of handling goroutines is not scalable and is error-prone because you might forget to match the number of receives with the number of goroutines. The recommended approach is to use `WaitGroup` (shown earlier in this tutorial):
 
 ```go
 package main
@@ -980,7 +926,7 @@ func main() {
 	go slowGreet("Delayed call")
 	go greet("Last call")
 
-	wg.Wait() // Clean, clear, correct
+	wg.Wait()
 }
 
 func slowGreet(phrase string) {
