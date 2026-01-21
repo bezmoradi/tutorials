@@ -218,6 +218,94 @@ func processTask(name string, seconds int, wg *sync.WaitGroup) {
 
 The key takeaway in this refactoring is that we pass a pointer to `sync.WaitGroup` because it is a stateful synchronization object whose internal counter **must** be shared by all goroutines involved in the wait. Passing it by value would copy the `WaitGroup`, so each goroutine would call `Done()` on its **own copy** instead of the original instance whose counter was incremented with `Add()`. As a result, the original counter would never reach zero and `Wait()` would block forever, causing a deadlock. For this reason, `WaitGroup` is explicitly documented as unsafe to copy after first use, and it must always be passed by pointer so all goroutines operate on the same shared state.
 
+We can improve our program even further by removing concurrency concerns from `processTask`, the function becomes simple, reusable, and easy to test, while all concurrency orchestration stays in `main`, where it belongs:
+
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
+)
+
+func main() {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	start := time.Now()
+
+	go func() {
+		defer wg.Done()
+		processTask("Task 1", 2)
+	}()
+
+	go func() {
+		defer wg.Done()
+		processTask("Task 2", 1)
+	}()
+
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+
+	wg.Wait()
+
+	elapsed := time.Since(start)
+	fmt.Printf("Total time: %v\n", elapsed)
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+}
+
+func processTask(name string, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	fmt.Printf("%s completed\n", name)
+}
+```
+
+The function now focuses only on what work is done, not how or when it runs, making it safe to execute synchronously or concurrently without modification. This separation of concerns is idiomatic Go and leads to code that is easier to reason about, easier to maintain, and easier to scale as concurrency requirements grow.
+
+In this example, concurrency is introduced using anonymous functions combined with the `go` keyword, which is a common and idiomatic Go pattern. Anonymous functions make it easy to launch goroutines inline, close to the logic that coordinates them, without polluting the package with small one-off helper functions. They also naturally capture variables from their surrounding scope, such as the `WaitGroup`, which keeps concurrency setup concise and readable while clearly showing where and how goroutines are started.
+
+We can still make improvements by adding more abstraction as follows:
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"sync"
+	"time"
+)
+
+func main() {
+	wg := sync.WaitGroup{}
+
+	start := time.Now()
+
+	wg.Go(func() {
+		processTask("Task 1", 2)
+	})
+
+	wg.Go(func() {
+		processTask("Task 2", 1)
+	})
+
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+
+	wg.Wait()
+
+	elapsed := time.Since(start)
+	fmt.Printf("Total time: %v\n", elapsed)
+	fmt.Println("Active goroutines:", runtime.NumGoroutine())
+}
+
+func processTask(name string, seconds int) {
+	time.Sleep(time.Duration(seconds) * time.Second)
+	fmt.Printf("%s completed\n", name)
+}
+```
+
+This refactoring improves the code by abstracting concurrency mechanics behind a higher-level API, allowing the program to express intent rather than coordination details. By using `wg.Go`, the boilerplate of manually calling `Add`, starting a goroutine, and ensuring `Done` is called is centralized and handled consistently. This reduces cognitive load, prevents common synchronization mistakes, and makes concurrent code read more like a structured list of tasks that run in parallel. As a result, the code becomes more declarative, easier to reason about, and more maintainable especially as the number of concurrent tasks grows.
+
 ## I/O-bound versus CPU-bound Processes
 
 ### CPU-bound Processes
@@ -252,11 +340,13 @@ func processTask() {
 }
 ```
 
-`runtime.GOMAXPROCS(1)` sets how many CPU cores Go is allowed to use at the same time which in this case is 1. Think of it as:
+`runtime.GOMAXPROCS(1)` sets how many OS threads can run Go code which in this case is 1. Think of it as:
 
 ```text
-GOMAXPROCS = number of logical processors Go runtime can schedule goroutines on
+GOMAXPROCS = Limits the number of operating system threads that can execute user-level Go code simultaneously
 ```
+
+In practice, the default value is usually set equal to the number of logical CPU cores, which is why it's easy to confuse "threads" with "cores". In other words, Go sets the default to `runtime.NumCPU()` (logical CPU cores) because it matches hardware parallelism.
 
 Now let’s set `runtime.GOMAXPROCS(8)`, which allows Go to use eight logical processors. Surprisingly, the program still takes roughly the same amount of time to run. That's because the code executes sequentially, and increasing `GOMAXPROCS` does not improve performance when there is no parallel work. Now let's refactor the above program to make it concurrent using `WaitGroup`:
 

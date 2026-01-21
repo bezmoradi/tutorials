@@ -107,45 +107,6 @@ numbers[3] = 10
 fmt.Println(numbers) // Prints [1 2 3 10]
 ```
 
-Now in order to write a test for an array, let's first refactor our code to move the array logic into its own function:
-
-```go
-package main
-
-import (
-	"fmt"
-)
-
-func sum(numbers [4]int) int {
-	sum := 0
-	for _, number := range numbers {
-		sum += number
-	}
-
-	return sum
-}
-
-func main() {
-	numbers := [4]int{1, 2, 3, 4}
-	fmt.Println(sum(numbers))
-}
-```
-We have a `sum` function which receives an array of integers as input param and returns the sum of all values. To test the `sum` function, let's create a test file called `main_test.go` as follows:
-
-```go
-package main
-
-import "testing"
-
-func TestSum(t *testing.T) {
-	got := sum([4]int{1, 2, 3, 4})
-	want := 10
-	if got != want {
-		t.Errorf("expected %v but received %v", want, got)
-	}
-}
-```
-
 ## Slice
 
 The only difference between creating an array and a slice is that we need to omit the hard-coded length:
@@ -178,7 +139,7 @@ numbers = append(numbers, 4)
 fmt.Println(numbers) // Prints [1 2 3 4]
 ```
 
-Keep in mind that instead of the `:=` operator we have used the `=` which is used for assigning a value. The `append()` function returns a new slice header. If the slice has sufficient capacity, `append` reuses the existing backing array and adds the new element. However, if capacity is exceeded, `append` allocates a new, larger backing array, copies all existing elements, and then adds the new element. This is why you must always assign the result of `append` back to your slice variable. We can append multiple values in one go:
+Keep in mind that instead of the `:=` operator we have used the `=` which is used for assigning a value. The `append()` function returns a new slice. If the slice has sufficient capacity, `append` reuses the existing backing array and adds the new element. However, if capacity is exceeded, `append` allocates a new, larger backing array, copies all existing elements, and then adds the new element. This is why you must always assign the result of `append` back to your slice variable. We can append multiple values in one go:
 
 ```go
 numbers = append(numbers, 1, 2, 3, 4)
@@ -254,10 +215,112 @@ copy(slice, numbers)
 fmt.Println(slice)
 ```
 
-`slice` is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the source variable (`numbers`) into the destination (`slice`).
+`slice` variable is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the source variable (`numbers`) into the destination (`slice`).
 
+### How to Remove An Element from Slice
 
-### An Intro to `len()` and `cap()` Built-in Functions
+There isn't any build-in function like `append()` to remove elements! The workaround though for this scenario is as follows:
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+firstElementRemoved := numbers[1:]
+fmt.Println(firstElementRemoved) // [1 2 3 4 5 6 7 8 9]
+```
+
+We have actually removed the first element from the slice. To remove the last element we have:
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+lastElementRemoved := numbers[:len(numbers)-1]
+fmt.Println(lastElementRemoved) // [0 1 2 3 4 5 6 7 8]
+```
+
+In the following example, we want to remove number 5 from the slice
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+numberFiveRemoved := append(numbers[:5], numbers[6:]...)
+fmt.Println(numberFiveRemoved) // [0 1 2 3 4 6 7 8 9]
+```
+
+### Use The `make()` function to Create Slices
+
+The `make` function initializes a slice with a specified length and capacity. It's useful when you know the initial size of the slice you need, and optionally, the capacity to which it might grow without having to dynamically resize as elements are appended:
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	slice := make([]int, 5, 10)
+	fmt.Println(slice) // [0 0 0 0 0]
+}
+```
+
+This creates a slice with the length of 5 and capacity of 10. Now if we change the above program to:
+
+```go
+slice := make([]int, 0, 10)
+fmt.Println(slice) // []
+```
+
+Basically, the main difference lies in the fact that when we added 5 as the second argument to the `make()` function, we asked that function to initialize the slice and as the default value for `int` type is `0`, we have `[0 0 0 0 0]`. In the second case, when we passed `0` as the second argument, it means that we do not want to initialize the slice that's why we get `[]`.  
+Likewise, the slice literal `[]int{}` initializes an empty slice. This method is suitable when the size or capacity of the slice isn't predefined, and you plan to append elements dynamically based on your program's logic.  
+Technically, you can use `make()` when you know the initial size and optionally the capacity of the slice, especially in scenarios where you want to allocate contiguous memory for the slice elements upfront or when dealing with larger slices to avoid **frequent reallocations** (because every time we add a new element without sufficient capacity, behind the scenes a new array is created).
+
+```go
+numbers := make([]int, 2, 10)
+numbers = append(numbers, 2)
+fmt.Println(numbers) // [0 0 2]
+```
+
+Using `make()` function as above is more memory-efficient because each time we add an element, Go does not have to allocate new space because already we have enough space for ten elements and only it will start adding new space when we go beyond 10 elements. As shown above, the first two slots are initialized to their default values (indexes 0, 1) and the `append()` function starts adding after those initialized slots which in this case is index 2. In order to fill in the first two slots we have:
+
+```go
+func main() {
+	numbers := make([]int, 2, 10)
+	numbers[0] = 1
+	numbers[1] = 2
+	numbers[2] = 3 // runtime error: index out of range [2] with length 2
+}
+```
+
+We would get error because there is no index of 2 in our slice. To add elements in this case, we need to use the `append()` function:
+
+```go
+numbers := make([]int, 2, 10)
+numbers[0] = 1
+numbers[1] = 2
+numbers = append(numbers, 3)
+fmt.Println(numbers) // [1 2 3]
+```
+
+Something good to know about the `make()` function is that in the following example `make([]int, 0, 10)` created a slice with the capacity of 10 and when we add numbers 11 and 12 to our slice, Go's runtime uses a growth strategy that depends on the current capacity. For slices with capacity less than 256, the capacity typically doubles. For slices with capacity of 256 or more, the capacity grows by approximately 1.25x (though the runtime may round up to optimize memory allocation). In this case, when we exceed capacity 10, it grows to 20, and when we exceed 20, it grows to 40:
+
+```go
+numbers := make([]int, 0, 10)
+numbers = append(numbers, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+fmt.Println(numbers, len(numbers), cap(numbers))
+fmt.Println("----------")
+numbers = append(numbers, 11, 12)
+fmt.Println(numbers, len(numbers), cap(numbers))
+fmt.Println("----------")
+numbers = append(numbers, 13, 14, 15, 16, 17, 18, 19, 20, 21)
+fmt.Println(numbers, len(numbers), cap(numbers))
+```
+
+In the output we have:
+
+```text
+[1 2 3 4 5 6 7 8 9 10] 10 10
+----------
+[1 2 3 4 5 6 7 8 9 10 11 12] 12 20
+----------
+[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] 21 40
+```
+
+## An Intro to `len()` and `cap()` Built-in Functions
 
 The `len()` function shows the length of an array or slice:
 
@@ -284,7 +347,7 @@ func main() {
 }
 ```
 
-### How to Get A Slice of An Array
+## How to Get A Slice of An Array
 
 To specify the start and end of the slice we can follow the `[inclusive:exclusive]` format:
 
@@ -354,7 +417,7 @@ fmt.Println(slice)  // [1000 1 2 3 4 5 6 7 8 9]
 
 When you use the copy function in Go, it creates a new slice and copies the elements from the source slice to the destination slice. The new slice is completely independent of the source slice, and modifications to one do not affect the other.
 
-### How to Create Multidimensional Array (Slice)
+## How to Create Multidimensional Array/Slice
 
 The notation `[][]int` signifies a slice (`[]`) capable of accommodating an arbitrary number of elements, all of which are of type `[]int`:
 
@@ -373,37 +436,12 @@ We can optionally add `[2][]int{odds, evens}` meaning the length of our slice is
 
 Basically, it adds an empty slice to the list.
 
-### How to Remove An Element from Slices
-
-There isn't any build-in function like `append()` to remove elements! The workaround though for this scenario is as follows:
-
-```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-firstElementRemoved := numbers[1:]
-fmt.Println(firstElementRemoved) // [1 2 3 4 5 6 7 8 9]
-```
-
-We have actually removed the first element from the slice. To remove the last element we have:
-
-```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-lastElementRemoved := numbers[:len(numbers)-1]
-fmt.Println(lastElementRemoved) // [0 1 2 3 4 5 6 7 8]
-```
-
-In the following example, we want to remove number 5 from the slice
-
-```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-numberFiveRemoved := append(numbers[:5], numbers[6:]...)
-fmt.Println(numberFiveRemoved) // [0 1 2 3 4 6 7 8 9]
-```
-
 ## How Slices Behave When Passed to Functions
 
 In Go, **everything is passed by value**—there is no pass by reference. However, slices exhibit interesting behavior because of their internal structure.
 
 A slice is internally a three-field struct containing:
+
 1. A pointer to the underlying array
 2. The length (len)
 3. The capacity (cap)
@@ -493,81 +531,6 @@ total := append(odds, 0, 2, 4, 6, 8)
 fmt.Println(total) // [1 3 5 7 9 0 2 4 6 8]
 ```
 
-## Use The `make()` function to Create Slices
-
-The `make` function initializes a slice with a specified length and capacity. It's useful when you know the initial size of the slice you need, and optionally, the capacity to which it might grow without having to dynamically resize as elements are appended:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	slice := make([]int, 5, 10)
-	fmt.Println(slice) // [0 0 0 0 0]
-}
-```
-
-This creates a slice with the length of 5 and capacity of 10. Now if we change the above program to:
-
-```go
-slice := make([]int, 0, 10)
-fmt.Println(slice) // []
-```
-
-Basically, the main difference lies in the fact that when we added 5 as the second argument to the `make()` function, we asked that function to initialize the slice and as the default value for `int` type is `0`, we have `[0 0 0 0 0]`. In the second case, when we passed `0` as the second argument, it means that we do not want to initialize the slice that's why we get `[]`.  
-Likewise, the slice literal `[]int{}` initializes an empty slice. This method is suitable when the size or capacity of the slice isn't predefined, and you plan to append elements dynamically based on your program's logic.  
-Technically, you can use `make()` when you know the initial size and optionally the capacity of the slice, especially in scenarios where you want to allocate contiguous memory for the slice elements upfront or when dealing with larger slices to avoid **frequent reallocations** (because every time we add a new element without sufficient capacity, behind the scenes a new array is created).
-
-```go
-numbers := make([]int, 2, 10)
-numbers = append(numbers, 2)
-fmt.Println(numbers) // [0 0 2]
-```
-
-Using `make()` function as above is more memory-efficient because each time we add an element, Go does not have to allocate new space because already we have enough space for ten elements and only it will start adding new space when we go beyond 10 elements. As shown above, the first two slots are initialized to their default values (indexes 0, 1) and the `append()` function starts adding after those initialized slots which in this case is index 2. In order to fill in the first two slots we have:
-
-```go
-func main() {
-	numbers := make([]int, 2, 10)
-	numbers[0] = 1
-	numbers[1] = 2
-	numbers[2] = 3 // runtime error: index out of range [2] with length 2
-}
-```
-
-We would get error because there is no index of 2 in our slice. To add elements in this case, we need to use the `append()` function:
-```go
-numbers := make([]int, 2, 10)
-numbers[0] = 1
-numbers[1] = 2
-numbers = append(numbers, 3)
-fmt.Println(numbers) // [1 2 3]
-```
-Something good to know about the `make()` function is that in the following example `make([]int, 0, 10)` created a slice with the capacity of 10 and when we add numbers 11 and 12 to our slice, Go's runtime uses a growth strategy that depends on the current capacity. For slices with capacity less than 256, the capacity typically doubles. For slices with capacity of 256 or more, the capacity grows by approximately 1.25x (though the runtime may round up to optimize memory allocation). In this case, when we exceed capacity 10, it grows to 20, and when we exceed 20, it grows to 40:
-
-```go
-numbers := make([]int, 0, 10)
-numbers = append(numbers, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-fmt.Println(numbers, len(numbers), cap(numbers))
-fmt.Println("----------")
-numbers = append(numbers, 11, 12)
-fmt.Println(numbers, len(numbers), cap(numbers))
-fmt.Println("----------")
-numbers = append(numbers, 13, 14, 15, 16, 17, 18, 19, 20, 21)
-fmt.Println(numbers, len(numbers), cap(numbers))
-```
-
-In the output we have:
-
-```text
-[1 2 3 4 5 6 7 8 9 10] 10 10
-----------
-[1 2 3 4 5 6 7 8 9 10 11 12] 12 20
-----------
-[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] 21 40
-```
-
 ## Advanced Slice Concepts
 
 ### Nil Slices vs Empty Slices
@@ -595,10 +558,11 @@ func main() {
 ```
 
 **Key differences**:
-- A nil slice has no underlying array allocated
-- An empty slice has an allocated (but empty) underlying array
-- Both work identically with `append`, `len`, and `cap`
-- For most use cases, prefer nil slices as they don't allocate memory
+
+-   A nil slice has no underlying array allocated
+-   An empty slice has an allocated (but empty) underlying array
+-   Both work identically with `append`, `len`, and `cap`
+-   For most use cases, prefer nil slices as they don't allocate memory
 
 **When it matters**: JSON encoding treats them differently—nil encodes to `null`, empty slices encode to `[]`.
 
@@ -699,38 +663,6 @@ func main() {
 
 **Best practice**: Use `make([]T, 0, capacity)` when you know the final size, especially for slices that will grow beyond 1000 elements.
 
-## Index out of Range Error
-
-In programming languages like JS/TS, if we reference an index which does not exist, we would get `undefined` value but in Go we would get an error:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	var numbers = []int{1, 2, 3}
-	fmt.Println(numbers[3])
-}
-```
-
-In the output we have:
-
-```text
-go run .
-panic: runtime error: index out of range [3] with length 3
-
-goroutine 1 [running]:
-main.main()
-	/main.go:8 +0x24
-exit status 2
-```
-
-**Important distinction**:
-- For **arrays** with constant indices, the Go compiler can detect out-of-bounds access at **compile-time** and your IDE will warn you
-- For **slices**, or arrays with variable indices, out-of-bounds access is detected at **runtime** and causes a panic
-
-In the above example with a slice, the error occurs at runtime as shown by the panic message
 
 ## Working with the `slices` Package
 

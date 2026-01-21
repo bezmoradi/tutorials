@@ -423,6 +423,7 @@ The `Pipe` function creates a communication mechanism that allows one process to
 ## Links
 
 -   https://quii.gitbook.io/learn-go-with-tests
+-   https://antonz.org/go-concurrency/
 
 ## Mock Library
 
@@ -616,7 +617,3 @@ mockClient.On("Get", url).Return("response", 200, nil)
 ```
 
 The positions **always match** the order you put values in `.Return()`. First value = 0, second = 1, third = 2, etc.
-
-
-## Links
-- https://github.com/cweill/gotests
