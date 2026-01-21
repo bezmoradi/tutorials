@@ -178,6 +178,8 @@ numberFiveRemoved := append(numbers[:5], numbers[6:]...)
 fmt.Println(numberFiveRemoved) // [0 1 2 3 4 6 7 8 9]
 ```
 
+So far, we have managed to use the `append` function a couple of times. As shown above, tt can also be used for merging two arrays/slices. The key point here is that if we need to pass an array/slice as the second argument to the `append()` function, we have to use the special syntax `...` which spreads the elements.
+
 ### Use The `make()` function to Create Slices
 
 The `make` function initializes a slice with a specified length and capacity. It's useful when you know the initial size of the slice you need, and optionally, the capacity to which it might grow without having to dynamically resize as elements are appended:
@@ -391,7 +393,7 @@ Basically, it adds an empty slice to the list.
 In Go, **everything is passed by value** and there is no pass by reference. However, slices exhibit interesting behavior because of their internal structure. A slice is internally a three-field struct containing:
 
 -   A pointer to the underlying array
--   The length 
+-   The length
 -   The capacity
 
 When you pass a slice to a function, Go passes a copy of this slice by value. However, since the slice header contains a pointer to the underlying array, both the original and the copied slice point to the **same backing array**. This means modifications to the elements are visible to both:
@@ -439,14 +441,16 @@ func main() {
 	fmt.Println(products) // [{1 First} {2 Second}]
 }
 ```
+
 Again, an important thing to remember is the trailing comma after the second element. We can also simplify the above code as follows:
 
 ```go
 products := []product{
 	{id: 1, title: "First"},
-	{id: 2, title: "Second"}, 
+	{id: 2, title: "Second"},
 }
 ```
+
 Go would figure out that the underlying type of that element is `product`. We can also first initialize the variable then add elements to it:
 
 ```go
@@ -458,118 +462,61 @@ products = append(products,
 fmt.Println(products) // [{1 first} {2 second}]
 ```
 
-## How to Use The `...` Operator
+## Avoiding Memory Leaks with Slices
 
-So far, we have managed to use the `append` function a couple of times. It can also be used for merging two arrays/slices:
-
-```go
-odds := []int{1, 3, 5, 7, 9}
-evens := []int{0, 2, 4, 6, 8}
-total := append(odds, evens...)
-fmt.Println(total) // [1 3 5 7 9 0 2 4 6 8]
-```
-
-The key point here is that if we need to pass an array/slice as the second argument to the `append()` function, we have to use the special syntax `...` which spreads the elements like so:
+When you create a slice from a large array, the entire underlying array **remains** in memory even if you only reference a small portion:
 
 ```go
-odds := []int{1, 3, 5, 7, 9}
-total := append(odds, 0, 2, 4, 6, 8)
-fmt.Println(total) // [1 3 5 7 9 0 2 4 6 8]
+data := make([]byte, 1000000) // 1MB array
+// ... fill data with content ...
+subset := data[0:5]
 ```
 
-## Advanced Slice Concepts
-
-### Nil Slices vs Empty Slices
-
-While they both have zero length, nil slices and empty slices are not the same:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	var nilSlice []int        // nil slice
-	emptySlice := []int{}     // empty slice
-	madeSlice := make([]int, 0) // empty slice
-
-	fmt.Println(nilSlice == nil)    // true
-	fmt.Println(emptySlice == nil)  // false
-	fmt.Println(madeSlice == nil)   // false
-
-	fmt.Println(len(nilSlice))      // 0
-	fmt.Println(len(emptySlice))    // 0
-	fmt.Println(len(madeSlice))     // 0
-}
-```
-
-**Key differences**:
-
--   A nil slice has no underlying array allocated
--   An empty slice has an allocated (but empty) underlying array
--   Both work identically with `append`, `len`, and `cap`
--   For most use cases, prefer nil slices as they don't allocate memory
-
-**When it matters**: JSON encoding treats them differently—nil encodes to `null`, empty slices encode to `[]`.
-
-### Avoiding Memory Leaks with Slices
-
-When you create a slice from a large array, the entire underlying array remains in memory even if you only reference a small portion:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	// Problem: memory leak
-	data := make([]byte, 1000000) // 1MB array
-	// ... fill data with content ...
-
-	subset := data[0:5] // Small slice, but entire 1MB array stays in memory
-	fmt.Println(len(subset))
-}
-```
-
-**Solution**: Copy the data you need to a new slice to allow the large array to be garbage collected:
+`make([]byte, 1_000_000)` allocates exactly 1 megabyte because in Go a `byte` is an alias for `uint8`, which is exactly one byte, and the second argument to make specifies the slice length, i.e., the number of elements to allocate; therefore Go allocates a backing array of 1000000 one-byte elements (1MB total), zero-initializes them immediately, and returns a slice header pointing to that array. The solution is to copy the data you need to a new slice to allow the large array to be garbage collected:
 
 ```go
 data := make([]byte, 1000000)
-// ... fill data ...
-
+// ... fill data with content ...
 subset := make([]byte, 5)
 copy(subset, data[0:5]) // Now the original 1MB array can be garbage collected
 ```
 
 This is crucial in long-running applications where you extract small pieces from large datasets.
 
-### Full Slice Expression for Capacity Control
+## Full Slice Expression for Capacity Control
 
-The full slice expression `a[low:high:max]` lets you limit the capacity of the resulting slice:
+`append()` does not always create new memory. If there is room at the end, Go will reuse the same shelf:
 
 ```go
-package main
-
-import "fmt"
-
-func main() {
-	numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-	// Regular slice expression
-	slice1 := numbers[2:5]
-	fmt.Printf("len=%d cap=%d %v\n", len(slice1), cap(slice1), slice1)
-	// Output: len=3 cap=8 [2 3 4]
-
-	// Full slice expression
-	slice2 := numbers[2:5:5]
-	fmt.Printf("len=%d cap=%d %v\n", len(slice2), cap(slice2), slice2)
-	// Output: len=3 cap=3 [2 3 4]
-}
+data := []int{0, 1, 2, 3, 4, 5}
+slice := data[1:3]
+fmt.Println(slice) // [1 2]
+slice = append(slice, 99) // Go says "There is free space after 3, I’ll put 99 there."
+fmt.Println(data) // [0 1 2 99 4 5]
 ```
 
-**Why this matters**: Limiting capacity prevents accidental modification of elements beyond the intended slice, useful when passing slices to untrusted code or preventing aliasing bugs.
+As we have the indexes that hold numbers 4 and 5, those free spaces will be used by the compiler to append the new value. By using `a[low:high:max]` pattern which is a full slice expression, it puts a wall at the end of a slice so `append()` cannot overwrite data that doesn't belong to it:
 
-### Performance Considerations: Pre-allocation
+```go
+data := []int{0, 1, 2, 3, 4, 5}
+slice := data[1:3:3]
+fmt.Println(slice) // [1 2]
+slice = append(slice, 99) // Go says "Oh, I cannot override data dues to full slice expression."
+fmt.Println(data) // [0 1 2 3 4 5]
+```
+
+For a while, let's get back to the first example without using full slice expression:
+
+```go
+	data := []int{0, 1, 2, 3, 4, 5}
+	slice := data[1:3]
+	slice = append(slice, 99, 100, 101, 102)
+	fmt.Println(data) // [0 1 2 3 4 5]
+```
+
+In this code, `slice := data[1:3]` creates a slice `[1, 2]` that shares the same backing array as data and has a length of 2 and a capacity of 5 (from index 1 to the end of the array). When `append(slice, 99, 100, 101, 102)` is called, the slice would need to grow to length 6, which exceeds its capacity, so Go allocates a **new** backing array, copies the existing elements `[1, 2]` into it, appends the new values, and makes slice point to this new array. Because the append cannot reuse the original backing array, the original data slice remains unchanged and still prints as `[0 1 2 3 4 5]`. In other words `Not enough → new array → safe`.
+
+## Performance Considerations: Pre-allocation
 
 Pre-allocating slices when you know the final size significantly improves performance:
 
@@ -581,56 +528,53 @@ import (
 	"time"
 )
 
+func main() {
+	withoutPreallocation()
+	withPreallocation()
+}
+
 func withoutPreallocation() {
 	start := time.Now()
 	var numbers []int
-	for i := 0; i < 1000000; i++ {
+
+	for i := range 1000000 {
 		numbers = append(numbers, i)
 	}
+
 	fmt.Println("Without preallocation:", time.Since(start))
 }
 
 func withPreallocation() {
 	start := time.Now()
 	numbers := make([]int, 0, 1000000)
-	for i := 0; i < 1000000; i++ {
+
+	for i := range 1000000 {
 		numbers = append(numbers, i)
 	}
-	fmt.Println("With preallocation:", time.Since(start))
-}
 
-func main() {
-	withoutPreallocation()
-	withPreallocation()
+	fmt.Println("With preallocation:", time.Since(start))
 }
 ```
 
-**Performance impact**: Pre-allocation can be 2-10x faster for large slices because it eliminates multiple reallocation and copy operations.
+Pre-allocation can be several times faster for large slices because it eliminates multiple reallocation and copy operations. In short:
 
-**Best practice**: Use `make([]T, 0, capacity)` when you know the final size, especially for slices that will grow beyond 1000 elements.
+-   Fewer allocations
+-   Fewer memory copies
+-   Less GC pressure
 
 ## Working with the `slices` Package
 
-The [slices](https://pkg.go.dev/slices) package (introduced in Go 1.21) provides generic functions for common slice operations. Here are some practical examples:
+The [slices](https://pkg.go.dev/slices) package provides generic functions for common slice operations. The `slices` package provides type-safe, efficient operations that eliminate the need to write custom functions for common slice manipulations. Here are some practical examples:
 
 ### Comparing Slices
 
 ```go
-package main
+numbers1 := []int{1, 2, 3, 4}
+numbers2 := []int{1, 2, 3, 4}
+numbers3 := []int{1, 2, 3, 5}
 
-import (
-	"fmt"
-	"slices"
-)
-
-func main() {
-	numbers1 := []int{1, 2, 3, 4}
-	numbers2 := []int{1, 2, 3, 4}
-	numbers3 := []int{1, 2, 3, 5}
-
-	fmt.Println(slices.Equal(numbers1, numbers2)) // true
-	fmt.Println(slices.Equal(numbers1, numbers3)) // false
-}
+fmt.Println(slices.Equal(numbers1, numbers2)) // true
+fmt.Println(slices.Equal(numbers1, numbers3)) // false
 ```
 
 ### Checking if Slice Contains an Element
@@ -680,4 +624,4 @@ numbers = slices.Compact(numbers)
 fmt.Println(numbers) // [1 2 3 4 5]
 ```
 
-The `slices` package provides type-safe, efficient operations that eliminate the need to write custom functions for common slice manipulations.
+
