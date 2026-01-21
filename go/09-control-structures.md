@@ -25,8 +25,8 @@ func main() {
 }
 ```
 
-Unlike some other programming languages, Go does not require you to place any parentheses around the `if` condition but if you do so, it's still valid code.  
-As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block (by the same token, the variable `somethingElse` is only accessible within the `else if` block).  
+Unlike some other programming languages, Go does not require you to place any parentheses around the `if` condition but if you do so, it's still valid code. As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block (by the same token, the variable `somethingElse` is only accessible within the `else if` block).  
+
 In Go, we have the option to place some statements in front of `if`. As an example, let's first see the normal version of writing conditional flow:
 
 ```go
