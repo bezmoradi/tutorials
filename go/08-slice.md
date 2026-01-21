@@ -158,7 +158,35 @@ In the above case, we would get the following error:
 panic: runtime error: index out of range [0] with length 0
 ```
 
-If you're interested in creating a slice with non-zero length, you can use the `make` function as follows:
+### How to Remove An Element from Slice
+
+There isn't any build-in function like `append()` to remove elements! The workaround though for this scenario is as follows:
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+firstElementRemoved := numbers[1:]
+fmt.Println(firstElementRemoved) // [1 2 3 4 5 6 7 8 9]
+```
+
+We have actually removed the first element from the slice. To remove the last element we have:
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+lastElementRemoved := numbers[:len(numbers)-1]
+fmt.Println(lastElementRemoved) // [0 1 2 3 4 5 6 7 8]
+```
+
+In the following example, we want to remove number 5 from the slice
+
+```go
+numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+numberFiveRemoved := append(numbers[:5], numbers[6:]...)
+fmt.Println(numberFiveRemoved) // [0 1 2 3 4 6 7 8 9]
+```
+
+### Use The `make()` function to Create Slices
+
+The `make` function initializes a slice with a specified length and capacity. It's useful when you know the initial size of the slice you need, and optionally, the capacity to which it might grow without having to dynamically resize as elements are appended:
 
 ```go
 numbers := make([]int, 4)
@@ -215,47 +243,11 @@ copy(slice, numbers)
 fmt.Println(slice)
 ```
 
-`slice` variable is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the source variable (`numbers`) into the destination (`slice`).
-
-### How to Remove An Element from Slice
-
-There isn't any build-in function like `append()` to remove elements! The workaround though for this scenario is as follows:
+`slice` variable is a slice of integers with the length of `2` and what `copy` does is that it copies the first two elements of the source variable (`numbers`) into the destination (`slice`). Now let's see what would happen if we add the third parameter:
 
 ```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-firstElementRemoved := numbers[1:]
-fmt.Println(firstElementRemoved) // [1 2 3 4 5 6 7 8 9]
-```
-
-We have actually removed the first element from the slice. To remove the last element we have:
-
-```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-lastElementRemoved := numbers[:len(numbers)-1]
-fmt.Println(lastElementRemoved) // [0 1 2 3 4 5 6 7 8]
-```
-
-In the following example, we want to remove number 5 from the slice
-
-```go
-numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-numberFiveRemoved := append(numbers[:5], numbers[6:]...)
-fmt.Println(numberFiveRemoved) // [0 1 2 3 4 6 7 8 9]
-```
-
-### Use The `make()` function to Create Slices
-
-The `make` function initializes a slice with a specified length and capacity. It's useful when you know the initial size of the slice you need, and optionally, the capacity to which it might grow without having to dynamically resize as elements are appended:
-
-```go
-package main
-
-import "fmt"
-
-func main() {
-	slice := make([]int, 5, 10)
-	fmt.Println(slice) // [0 0 0 0 0]
-}
+slice := make([]int, 5, 10)
+fmt.Println(slice) // [0 0 0 0 0]
 ```
 
 This creates a slice with the length of 5 and capacity of 10. Now if we change the above program to:
@@ -265,8 +257,7 @@ slice := make([]int, 0, 10)
 fmt.Println(slice) // []
 ```
 
-Basically, the main difference lies in the fact that when we added 5 as the second argument to the `make()` function, we asked that function to initialize the slice and as the default value for `int` type is `0`, we have `[0 0 0 0 0]`. In the second case, when we passed `0` as the second argument, it means that we do not want to initialize the slice that's why we get `[]`.  
-Likewise, the slice literal `[]int{}` initializes an empty slice. This method is suitable when the size or capacity of the slice isn't predefined, and you plan to append elements dynamically based on your program's logic.  
+Basically, the main difference lies in the fact that when we added 5 as the second argument to the `make()` function, we asked that function to initialize the slice and as the default value for `int` type is `0`, we have `[0 0 0 0 0]`. In the second case, when we passed `0` as the second argument, it means that we do not want to initialize the slice that's why we get `[]`. Likewise, the slice literal `[]int{}` initializes an empty slice. This method is suitable when the size or capacity of the slice isn't predefined, and you plan to append elements dynamically based on your program's logic.  
 Technically, you can use `make()` when you know the initial size and optionally the capacity of the slice, especially in scenarios where you want to allocate contiguous memory for the slice elements upfront or when dealing with larger slices to avoid **frequent reallocations** (because every time we add a new element without sufficient capacity, behind the scenes a new array is created).
 
 ```go
@@ -662,7 +653,6 @@ func main() {
 **Performance impact**: Pre-allocation can be 2-10x faster for large slices because it eliminates multiple reallocation and copy operations.
 
 **Best practice**: Use `make([]T, 0, capacity)` when you know the final size, especially for slices that will grow beyond 1000 elements.
-
 
 ## Working with the `slices` Package
 
