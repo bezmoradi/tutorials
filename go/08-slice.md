@@ -12,14 +12,8 @@ The key point here is that both Array and Slice elements must be of a **single**
 The syntax to create an array is as follows:
 
 ```go
-package main
-
-import "fmt"
-
-func main() {
-	numbers := [4]int{1, 2, 3, 4}
-	fmt.Println(numbers)
-}
+numbers := [4]int{1, 2, 3, 4}
+fmt.Println(numbers)
 ```
 
 `[4]int` defines the type of the values which in this case is an array of integers and `4` defines the size of the array. Another way of defining the length of an array is the `...` as follows:
@@ -99,7 +93,7 @@ numbers := [4]int{1, 2, 3, 4}
 fmt.Println(numbers[4]) // invalid argument: index 4 out of bounds [0:4]
 ```
 
-To know more on this topic, refer to [Index out of Range Error](#index-out-of-range-error). To update a specific index of the array with a new value we can:
+To update a specific index of the array with a new value we can:
 
 ```go
 numbers := [4]int{1, 2, 3, 4}
@@ -222,18 +216,6 @@ numbers[3] = 4
 fmt.Println(numbers) // Prints [1 2 3 4]
 ```
 
-You need to be cautious when you want to use the `append` function while you have created your slice using the `make` function:
-
-```go
-numbers := make([]int, 4)
-numbers = append(numbers, 1)
-numbers = append(numbers, 2)
-numbers = append(numbers, 3)
-numbers = append(numbers, 4)
-fmt.Println(numbers) // Prints [0 0 0 0 1 2 3 4]
-```
-
-Basically, what the above code does is that `make` has created a slice with four elements with default values of `0` then `append` will add new values to the next index.  
 We can use the `copy` function like this:
 
 ```go
@@ -287,33 +269,7 @@ numbers = append(numbers, 3)
 fmt.Println(numbers) // [1 2 3]
 ```
 
-Something good to know about the `make()` function is that in the following example `make([]int, 0, 10)` created a slice with the capacity of 10 and when we add numbers 11 and 12 to our slice, Go's runtime uses a growth strategy that depends on the current capacity. For slices with capacity less than 256, the capacity typically doubles. For slices with capacity of 256 or more, the capacity grows by approximately 1.25x (though the runtime may round up to optimize memory allocation). In this case, when we exceed capacity 10, it grows to 20, and when we exceed 20, it grows to 40:
-
-```go
-numbers := make([]int, 0, 10)
-numbers = append(numbers, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-fmt.Println(numbers, len(numbers), cap(numbers))
-fmt.Println("----------")
-numbers = append(numbers, 11, 12)
-fmt.Println(numbers, len(numbers), cap(numbers))
-fmt.Println("----------")
-numbers = append(numbers, 13, 14, 15, 16, 17, 18, 19, 20, 21)
-fmt.Println(numbers, len(numbers), cap(numbers))
-```
-
-In the output we have:
-
-```text
-[1 2 3 4 5 6 7 8 9 10] 10 10
-----------
-[1 2 3 4 5 6 7 8 9 10 11 12] 12 20
-----------
-[1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] 21 40
-```
-
-## An Intro to `len()` and `cap()` Built-in Functions
-
-The `len()` function shows the length of an array or slice:
+Before digging deeper, first, let's get more familair with Go's built-in functions `len()` and `cap()`. The `len()` function shows the length of an array or slice:
 
 ```go
 numbers := [10]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
@@ -327,15 +283,18 @@ numbers := [10]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 fmt.Println(cap(numbers)) // Returns 10
 ```
 
-If two arrays are of the same length, we can assign one to the other:
+With that in mind, let's get back to the `make()` function. In the following example `make([]int, 0, 10)` created a slice with the capacity of 10 and when we add numbers 11 and 12 to our slice, Go's runtime uses a growth strategy that typically doubles the capacity. In this case, when we exceed capacity 10, it grows to 20, and when we exceed 20, it grows to 40:
 
 ```go
-func main() {
-	numbers1 := []int{1, 2, 3}
-	numbers2 := []int{10, 20, 30}
-	numbers1 = numbers2
-	fmt.Println(numbers1) // Returns [10 20 30]
-}
+numbers := make([]int, 0, 10)
+numbers = append(numbers, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+fmt.Println(numbers, len(numbers), cap(numbers)) // [1 2 3 4 5 6 7 8 9 10] 10 10
+
+numbers = append(numbers, 11, 12)
+fmt.Println(numbers, len(numbers), cap(numbers)) // [1 2 3 4 5 6 7 8 9 10 11 12] 12 20
+
+numbers = append(numbers, 13, 14, 15, 16, 17, 18, 19, 20, 21) // [1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21] 21 40
+fmt.Println(numbers, len(numbers), cap(numbers))
 ```
 
 ## How to Get A Slice of An Array
@@ -349,7 +308,7 @@ fmt.Println(numbers)  // Returns [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice)    // Returns [2 3 4 5 6]
 ```
 
-In `numbers[2:7]` index 2 which holds number two is included and index 7 which holds number seven is NOT included; that's why we have `[2 3 4 5 6]`.
+In `numbers[2:7]` index 2 which holds number two is included and index 7 which holds number seven is NOT included; that's why we have `[2 3 4 5 6]`. Now let's see what would happen if we only add the exclusive part:
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -358,7 +317,7 @@ fmt.Println(numbers) // [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice) // [0 1 2 3 4 5]
 ```
 
-In the above snippet, `[:6]` means from the very beginning of the slice to the element at index 6 (it's not included) so we have `[0 1 2 3 4 5]`.
+In the above snippet, `[:6]` means from the very beginning of the slice to the element at index 6 (it's not included) so we have `[0 1 2 3 4 5]`. By the same token, we can only use inclusive part as well:
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -367,7 +326,7 @@ fmt.Println(numbers) // [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice) // [4 5 6 7 8 9]
 ```
 
-In the above case, `[4:]` can be translated to `[inclusive:]` meaning from the element at index 4 which is number four (including itself) to the end of the slice which will be `[4 5 6 7 8 9]`.
+In the above case, `[4:]` can be translated to `[inclusive:]` meaning from the element at index 4 which is number four (including itself) to the end of the slice which will be `[4 5 6 7 8 9]`. `[:]` means from the element at index 0 including itself to the end of the slice; so we get `[0 1 2 3 4 5 6 7 8 9]`:
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -376,7 +335,7 @@ fmt.Println(numbers) // [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice) // [0 1 2 3 4 5 6 7 8 9]
 ```
 
-`[:]` means from the element at index 0 including itself to the end of the slice; so we get `[0 1 2 3 4 5 6 7 8 9]`. An equivalent of the above code is:
+An equivalent of the above code is:
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -385,7 +344,7 @@ fmt.Println(numbers) // [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice)   // [0 1 2 3 4 5 6 7 8 9]
 ```
 
-Technically speaking, a slice is a window to the original array; in other words, it does not copy anything from the original array but contains a pointer to part of that array that's why mutating a slice element would result in mutation in the original array/slice as well. For more details on this behavior, see [How Slices Behave When Passed to Functions](#how-slices-behave-when-passed-to-functions).
+Technically speaking, a slice is a window to the original array; in other words, it does not copy anything from the original array but contains a pointer to part of that array that's why mutating a slice element would result in mutation in the original array/slice as well.
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -395,7 +354,7 @@ fmt.Println(numbers) // [1000 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice) // [1000 1 2 3 4 5 6 7 8 9]
 ```
 
-In the above example, we are mutating the first element of the `slice` at index 0 and if we print both the original slice (`numbers`) and the new one (`slice`), we'll see that they are both mutated. To copy a slice/array referring to a pointer in memory, we can:
+In the above example, we are mutating the first element of the `slice` at index 0 and if we print both the original slice (`numbers`) and the new one (`slice`), we'll see that they are both mutated. To copy and at the same time break the chain between the two, we can use:
 
 ```go
 numbers := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
@@ -406,7 +365,7 @@ fmt.Println(numbers) // [0 1 2 3 4 5 6 7 8 9]
 fmt.Println(slice)  // [1000 1 2 3 4 5 6 7 8 9]
 ```
 
-When you use the copy function in Go, it creates a new slice and copies the elements from the source slice to the destination slice. The new slice is completely independent of the source slice, and modifications to one do not affect the other.
+When you use the `copy()` function in Go, it creates a **new** slice and copies the elements from the source slice to the destination slice. The new slice is completely independent of the source slice, and modifications to one do not affect the other.
 
 ## How to Create Multidimensional Array/Slice
 
@@ -429,15 +388,13 @@ Basically, it adds an empty slice to the list.
 
 ## How Slices Behave When Passed to Functions
 
-In Go, **everything is passed by value**—there is no pass by reference. However, slices exhibit interesting behavior because of their internal structure.
+In Go, **everything is passed by value** and there is no pass by reference. However, slices exhibit interesting behavior because of their internal structure. A slice is internally a three-field struct containing:
 
-A slice is internally a three-field struct containing:
+-   A pointer to the underlying array
+-   The length 
+-   The capacity
 
-1. A pointer to the underlying array
-2. The length (len)
-3. The capacity (cap)
-
-When you pass a slice to a function, Go passes a **copy of this slice header by value**. However, since the slice header contains a pointer to the underlying array, both the original and the copied slice header point to the **same backing array**. This means modifications to array elements are visible to both:
+When you pass a slice to a function, Go passes a copy of this slice by value. However, since the slice header contains a pointer to the underlying array, both the original and the copied slice point to the **same backing array**. This means modifications to the elements are visible to both:
 
 ```go
 package main
@@ -456,9 +413,9 @@ func update(n []int) {
 }
 ```
 
-When you pass the `numbers` slice to the `update` function, the slice header is copied, but the pointer inside that header still points to the same underlying array. This is why modifying `n[0]` affects the original `numbers` slice—they share the same backing array.
+When you pass the `numbers` slice to the `update` function, the slice is copied, but its pointer still points to the same underlying array. This is why modifying `n[0]` affects the original `numbers` slice as they share the same backing array.
 
-**Important caveat**: If the function uses `append` and causes the slice to grow beyond its capacity, a new backing array is allocated, and the connection to the original slice's array is broken. The original slice remains unchanged because only the copied slice header gets updated with the new array pointer.
+If the function uses `append` and causes the slice to grow beyond its capacity, a new backing array is allocated, and the connection to the original slice's array is broken. The original slice remains unchanged because only the copied slice header gets updated with the new array pointer.
 
 ## How to Create A Slice of Structs
 
@@ -477,22 +434,20 @@ type product struct {
 func main() {
 	products := []product{
 		product{id: 1, title: "First"},
-		product{id: 2, title: "Second"},
+		product{id: 2, title: "Second"}, // Comma must exist
 	}
 	fmt.Println(products) // [{1 First} {2 Second}]
 }
 ```
-
-The IDE would warn that the `product` keyword in an element like `product{id: 1, title: "First"}` is redundant just because Go would figure out that the underlying type of that element is `product`. So we can simplify the above code as follows:
+Again, an important thing to remember is the trailing comma after the second element. We can also simplify the above code as follows:
 
 ```go
 products := []product{
 	{id: 1, title: "First"},
-	{id: 2, title: "Second"}, // Comma must exist
+	{id: 2, title: "Second"}, 
 }
 ```
-
-Again, an important thing to remember is the trailing comma after the second element. We can also first initialize the variable then add elements to it:
+Go would figure out that the underlying type of that element is `product`. We can also first initialize the variable then add elements to it:
 
 ```go
 var products []product
@@ -505,7 +460,7 @@ fmt.Println(products) // [{1 first} {2 second}]
 
 ## How to Use The `...` Operator
 
-So far, we have managed to use the `append` function a couple of times. The `append()` function can also be used for merging two arrays/slices:
+So far, we have managed to use the `append` function a couple of times. It can also be used for merging two arrays/slices:
 
 ```go
 odds := []int{1, 3, 5, 7, 9}
