@@ -1,12 +1,24 @@
 # Go > JSON
 
-The built-in `encoding/json` package is Go is responsible for working with JSON data. To encode JSON data, we have to use the `Marshal` function which has the following signature:
+## Why JSON Encoding and Decoding Matter
+
+JSON (JavaScript Object Notation) is the de facto standard for data interchange in modern applications. Whether you're building REST APIs, consuming third-party services, or storing configuration data, you'll need to convert between Go's strongly-typed structs and JSON's text-based format.
+
+Go's static type system means this conversion must be explicit. Unlike dynamically-typed languages where JSON maps naturally to native data structures, Go requires deliberate marshaling (Go → JSON) and unmarshaling (JSON → Go). The `encoding/json` package in the standard library provides these capabilities with zero external dependencies.
+
+## Converting Structs to JSON with Marshal
+
+The built-in `encoding/json` package in Go is responsible for working with JSON data. To encode JSON data, we use the `Marshal` function which has the following signature:
 
 ```go
 func Marshal(v any) ([]byte, error)
 ```
 
-As shown above, `Marshal` gets input param of any type and returns`[]byte` and `error` (Read `[]byte` as "a slice of byte"). To make our code testable, we are goring to create a function called `jsonEncoder` as follows:
+As shown above, `Marshal` accepts a parameter of any type and returns `[]byte` and `error` (read `[]byte` as "a slice of bytes").
+
+**Why []byte instead of string?** Strings in Go are immutable. Using mutable byte slices (`[]byte`) allows the JSON encoder to build the output efficiently without creating multiple intermediate string copies. Similarly, parsing JSON benefits from working with mutable buffers.
+
+To make our code testable, we are going to create a function called `jsonEncoder` as follows:
 
 ```go
 package main
@@ -21,7 +33,11 @@ type language struct {
 	Name     string   `json:"name,omitempty"`
 	UseCases []string `json:"use_cases,omitempty"`
 }
+```
 
+The `json:"name,omitempty"` syntax is a **struct tag** that controls JSON behavior. The first part (`"name"`) renames the field in JSON output. The `omitempty` option excludes the field if it has a zero value (empty string, nil slice, 0, etc.). We'll explore struct tags in detail later.
+
+```go
 func jsonEncoder(input any) (string, error) {
 	byteSlice, err := json.Marshal(input)
 	if err != nil {
@@ -55,8 +71,9 @@ It outputs:
 {"name":"Go","use_cases":["Cloud And Network Services","Web Development","Command-line Interfaces","DevOps And Site Reliability"]}
 ```
 
-An important note while working with either `Marshal` or `Unmarshal` functions is that the initial letter of struct fields must be uppercase otherwise Go cannot figure it out.  
-The type of `byteSlice` variable is `[]byte` and by taking a peek at `https://go.dev/ref/spec#Types`, we will see that it's an alias for `uint8` which is `the set of all unsigned 8-bit integers (0 to 255)`. Technically, in order to see a human-readable format of a `uint8` type (aka `byte`), we need to cast it to the `string` type; in other words, `string(byteSlice)` shows a string representation of any variable with the `uint8` type. Now let's create a file named `main_test.go` to add tests for our function:
+An important note while working with either `Marshal` or `Unmarshal` functions is that the initial letter of struct fields must be uppercase, otherwise Go cannot export them for the JSON encoder to access.
+
+The type of `byteSlice` variable is `[]byte` and by referring to the [Go language specification](https://go.dev/ref/spec#Types), we see that `byte` is an alias for `uint8` (the set of all unsigned 8-bit integers from 0 to 255). To convert a `[]byte` to human-readable format, we cast it to `string`: `string(byteSlice)` produces a string representation of the byte slice. Now let's create a file named `main_test.go` to add tests for our function:
 
 ```go
 package main
@@ -93,7 +110,7 @@ func TestJsonEncoder(t *testing.T) {
 			output: `{}`,
 		},
 		{
-			name:         "invalid syclic data structure input",
+			name:         "invalid cyclic data structure input",
 			input:        node1,
 			errorMessage: "json: unsupported value: encountered a cycle via *main.Node",
 		},
@@ -102,18 +119,29 @@ func TestJsonEncoder(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := jsonEncoder(test.input)
-			if err != nil && test.errorMessage != err.Error() {
-				t.Errorf("expected %v but received %v", test.errorMessage, err.Error())
+
+			// Check error expectations
+			if test.errorMessage != "" {
+				if err == nil {
+					t.Fatalf("expected error %q but got none", test.errorMessage)
+				}
+				if err.Error() != test.errorMessage {
+					t.Errorf("expected error %q but received %q", test.errorMessage, err.Error())
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
-			if result != test.output {
-				t.Errorf("expected %v, but received %v", test.output, result)
+
+			// Check output only if no error expected
+			if test.errorMessage == "" && result != test.output {
+				t.Errorf("expected %q, but received %q", test.output, result)
 			}
 		})
 	}
 }
 ```
 
-This is a table test to test different edge cases.
+This table-driven test validates different scenarios: successful encoding, handling of zero values with `omitempty`, and the error case when encountering circular data structures.
 
 ## How to Convert JSON to Struct
 
@@ -123,7 +151,7 @@ In order to convert a JSON format to a struct, we need to use the `Unmarshal` fu
 func Unmarshal(data []byte, v any) error
 ```
 
-This function receives input data of a slice of bytes (`[]byte`) as the first param and memory address of a struct as the second one. If this process results in any error, `Unmarshal` returns it. In the following snippet, we have created a function called `jsonDecoder` which utilized the `Unmarshal` function:
+This function receives input data of a slice of bytes (`[]byte`) as the first parameter and a pointer to a struct as the second one. If this process results in any error, `Unmarshal` returns it. In the following snippet, we have created a function called `jsonDecoder` which utilizes the `Unmarshal` function:
 
 ```go
 package main
@@ -150,12 +178,12 @@ func jsonDecoder(input string) (language, error) {
 
 func main() {
 	input := `{"name":"Go","use_cases":["Cloud And Network Services","Web Development","Command-line Interfaces","DevOps And Site Reliability"]}`
-	language, err := jsonDecoder(input)
+	lang, err := jsonDecoder(input)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-	fmt.Println(language)
+	fmt.Println(lang)
 }
 ```
 
@@ -165,7 +193,7 @@ It outputs:
 {Go [Cloud And Network Services Web Development Command-line Interfaces DevOps And Site Reliability]}
 ```
 
-In the above program we are converting the `input` param to `[]byte` type. If we print the type of `[]byte(input)` by calling `fmt.Printf("%T\n", []byte(input))`, we get `[]uint8`. Basically, `https://go.dev/ref/spec#Types` shows us that `byte is an alias for uint8`; in other words, both `Marshal` and `Unmarshal` work with exactly the same type which is `[]uint8`. Now let's add some tests to check the correctness of the `jsonDecoder` function:
+In the above program, we are converting the `input` param to `[]byte` type. If we print the type of `[]byte(input)` by calling `fmt.Printf("%T\n", []byte(input))`, we get `[]uint8`. As mentioned earlier, `byte` is an alias for `uint8`, so both `Marshal` and `Unmarshal` work with the same underlying type: `[]uint8`. Now let's add some tests to check the correctness of the `jsonDecoder` function:
 
 ```go
 package main
@@ -207,10 +235,21 @@ func TestJsonDecoder(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := jsonDecoder(test.input)
-			if err != nil && test.errorMessage != err.Error() {
-				t.Fatalf("expected %v but received %v", test.errorMessage, err.Error())
+
+			// Check error expectations
+			if test.errorMessage != "" {
+				if err == nil {
+					t.Fatalf("expected error %q but got none", test.errorMessage)
+				}
+				if err.Error() != test.errorMessage {
+					t.Fatalf("expected error %q but received %q", test.errorMessage, err.Error())
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(result, test.output) {
+
+			// Check output only if no error expected
+			if test.errorMessage == "" && !reflect.DeepEqual(result, test.output) {
 				t.Errorf("expected %v, but received %v", test.output, result)
 			}
 		})
@@ -218,11 +257,28 @@ func TestJsonDecoder(t *testing.T) {
 }
 ```
 
-## When to Use `Encode` And `Decode` Functions
+## When to Use `Encode` and `Decode` Functions
 
-So far we have seen that if we have a struct and want to convert it to JSON, we can simply use `Marshal` function or when we want to convert a JSON object back to a struct, we can use the `Unmarshal` function. Basically, the `Encode` and `Decode` can be also used for the same purposes respectively. The difference though is that they work with a stream of data.  
-For example, the `Decode` method reads JSON input from an `io.Reader` (like a file, network stream, or string reader) and directly decodes it into a value. It's more low-level and provides streaming JSON decoding which can be useful when dealing with large JSON documents that can't fit entirely in memory. It's often used when you need to continuously read JSON objects from a stream without loading the entire stream into memory at once. But `Unmarshal` function, on the other hand, takes a slice of bytes containing JSON data and populates a struct. It's more high-level and simpler to use as it operates on a byte slice (usually read from an entire file or an HTTP response) and parses the entire JSON at once. It's generally used when you have the entire JSON payload in memory and want to parse it.
-In order to understand the inner working of `Encode` And `Decode` functions, we need to know a little bit about the `Writer` interface in Go (`https://pkg.go.dev/io#Writer`).
+So far we have seen that if we have a struct and want to convert it to JSON, we can use the `Marshal` function, and when we want to convert a JSON object back to a struct, we can use the `Unmarshal` function. The `Encode` and `Decode` methods serve the same purposes respectively, but they work with streams of data rather than in-memory byte slices.
+
+### Marshal/Unmarshal vs Encode/Decode
+
+**Use Marshal/Unmarshal when:**
+- You have the entire JSON payload already in memory (as a `[]byte` or string)
+- Working with small to medium-sized JSON documents
+- You need the simplest API for one-shot conversions
+
+**Use Encode/Decode when:**
+- Reading from or writing to I/O streams (files, network connections, HTTP requests/responses)
+- Processing large JSON documents that shouldn't be loaded entirely into memory
+- Working with streaming data or multiple JSON objects in sequence
+- You want to avoid intermediate buffer allocations
+
+**Performance considerations:** `Marshal` must allocate a complete `[]byte` buffer to hold the entire encoded result before returning. `Encode` writes incrementally to the underlying `io.Writer`, which can be more memory-efficient for large payloads. Similarly, `Unmarshal` requires the entire JSON document in memory as a `[]byte`, while `Decode` can read from streams. For large payloads or high-throughput scenarios, streaming with `Encode`/`Decode` reduces memory pressure and can improve performance by avoiding large buffer allocations.
+
+### Understanding io.Writer and io.Reader Interfaces
+
+To understand how `Encode` and `Decode` work, we need to know about the [`io.Writer`](https://pkg.go.dev/io#Writer) interface in Go.
 
 ```go
 type Writer interface {
@@ -230,13 +286,13 @@ type Writer interface {
 }
 ```
 
-As shown above, `Writer` is an interface meaning any other type with the `Write` method attached to it is going to be of type `Writer` and can be used wherever this interface is needed. For example, [json.NewEncoder](https://pkg.go.dev/encoding/json#NewEncoder) function needs a type of `Writer` as its input param:
+As shown above, `Writer` is an interface, meaning any type with the `Write` method satisfies it and can be used wherever this interface is needed. For example, the [`json.NewEncoder`](https://pkg.go.dev/encoding/json#NewEncoder) function requires a type that implements `io.Writer` as its input parameter:
 
 ```go
 func NewEncoder(w io.Writer) *Encoder
 ```
 
-For example, the [File](https://pkg.go.dev/os) type has the [Write](https://pkg.go.dev/os#File.Write) method attached to it meaning any variable of type `File` can be passed to the `NewEncoder` function simply because this function accepts any input params that matches with `io.Writer`. To see all this in action, we have:
+The [`os.File`](https://pkg.go.dev/os#File) type has a [`Write`](https://pkg.go.dev/os#File.Write) method, meaning it satisfies the `io.Writer` interface. Therefore, any variable of type `*os.File` can be passed to `NewEncoder`. Here's a practical example:
 
 ```go
 package main
@@ -273,11 +329,14 @@ func main() {
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
-	encoder.Encode(l)
+	if err := encoder.Encode(l); err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return
+	}
 }
 ```
 
-By the same token, the `NewDecoder` function accepts any type as input param that implements the `io.Reader` with this signature:
+Similarly, the [`json.NewDecoder`](https://pkg.go.dev/encoding/json#NewDecoder) function accepts any type that implements the [`io.Reader`](https://pkg.go.dev/io#Reader) interface with this signature:
 
 ```go
 type Reader interface {
@@ -285,13 +344,13 @@ type Reader interface {
 }
 ```
 
-As the `os.Open` function returns a `File` type and this type has a [Read](https://pkg.go.dev/os#File.Read) function with the following signature:
+Since [`os.Open`](https://pkg.go.dev/os#Open) returns a `*os.File` and this type has a [`Read`](https://pkg.go.dev/os#File.Read) method with the following signature:
 
 ```go
 func (f *File) Read(b []byte) (n int, err error)
 ```
 
-We can simply pass it to the `NewEncoder` function as shown below:
+We can pass it directly to the `NewDecoder` function as shown below:
 
 ```go
 package main
@@ -331,3 +390,130 @@ func main() {
 	fmt.Println(l)
 }
 ```
+
+## Real-World Example: HTTP Handler
+
+Here's a practical example showing when to use `Marshal` vs `Encode` in an HTTP handler:
+
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+)
+
+type Response struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
+}
+
+// Bad: Uses Marshal with unnecessary allocation
+func handlerWithMarshal(w http.ResponseWriter, r *http.Request) {
+	resp := Response{
+		Status:  "success",
+		Message: "User created",
+		Data:    map[string]string{"id": "123", "name": "Alice"},
+	}
+
+	// Marshal creates []byte in memory
+	jsonBytes, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonBytes) // Then writes to response
+}
+
+// Good: Uses Encode to write directly to response
+func handlerWithEncode(w http.ResponseWriter, r *http.Request) {
+	resp := Response{
+		Status:  "success",
+		Message: "User created",
+		Data:    map[string]string{"id": "123", "name": "Alice"},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode writes directly to http.ResponseWriter
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("Error encoding response: %v", err)
+		// Note: Headers already sent, can't return error to client
+	}
+}
+
+func main() {
+	http.HandleFunc("/marshal", handlerWithMarshal)
+	http.HandleFunc("/encode", handlerWithEncode)
+
+	fmt.Println("Server starting on :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+```
+
+**Key takeaway:** In HTTP handlers, prefer `Encode` to write directly to `http.ResponseWriter` rather than marshaling to `[]byte` first. This is more efficient and idiomatic. Use `Marshal` when you need the JSON as a byte slice for other purposes (logging, signing, storing).
+
+## Best Practices and Common Pitfalls
+
+### Struct Tags
+
+The `json` struct tag controls JSON encoding behavior:
+
+```go
+type User struct {
+    ID       int    `json:"id"`                    // Rename field in JSON
+    Name     string `json:"name,omitempty"`        // Omit if zero value
+    Password string `json:"-"`                     // Never include in JSON
+    Age      int    `json:"age,string"`            // Encode number as string
+}
+
+type Admin struct {
+    User     `json:",inline"`                      // Flatten embedded struct fields
+    Role     string `json:"role"`
+}
+```
+
+**Production tip:** Use `omitempty` for optional fields to produce cleaner JSON output, but be aware that it removes fields with zero values. If you need to distinguish between an absent field and a zero value (e.g., `false` vs absent for booleans), use pointer fields instead. Never expose sensitive fields like passwords—use `json:"-"` to exclude them.
+
+The `json:",inline"` tag (also written as an empty name) flattens embedded struct fields into the parent. An `Admin` with embedded `User` produces `{"id": 1, "name": "Alice", "role": "admin"}` instead of `{"User": {"id": 1, "name": "Alice"}, "role": "admin"}`.
+
+### Handling Unknown Fields
+
+By default, `Unmarshal` ignores JSON fields that don't match your struct. To catch typos or enforce strict validation:
+
+```go
+decoder := json.NewDecoder(reader)
+decoder.DisallowUnknownFields() // Returns error if JSON has extra fields
+err := decoder.Decode(&myStruct)
+```
+
+### Pointer Fields for Distinguishing Null vs Absent
+
+Use pointer fields when you need to distinguish between a field being absent, null, or having a zero value:
+
+```go
+type Config struct {
+    Timeout *int `json:"timeout,omitempty"` // nil pointer omitted from JSON
+                                              // non-nil pointer includes value: {"timeout": 0}
+}
+```
+
+With `omitempty`, a `nil` pointer is excluded from JSON entirely, while a pointer to zero (or any value) is included in the output.
+
+### Performance Considerations
+
+1. **Use json.RawMessage for delayed parsing:** When you don't need to parse all fields immediately, use `json.RawMessage` to defer unmarshaling expensive nested structures.
+2. **Streaming for large arrays:** When processing large JSON arrays, decode elements one at a time using `Decoder` rather than loading the entire array into memory with `Unmarshal`.
+3. **Avoid unnecessary allocations:** Marshal creates a new `[]byte` on each call. If you're writing directly to an `io.Writer` (like an HTTP response), use `Encode` instead to avoid the intermediate buffer.
+
+### Common Errors
+
+- **Unexported fields are ignored:** Only fields starting with uppercase letters are encoded/decoded.
+- **Circular references return errors:** `Marshal` cannot handle circular data structures and returns an error like "encountered a cycle via *Type" (as shown in our test case).
+- **Type mismatches silently use zero values:** If JSON contains a string but your struct expects an int, `Unmarshal` sets the field to its zero value (0) and continues without error. Use `Decoder.DisallowUnknownFields()` for stricter validation.
+- **Interface{} loses type information:** Unmarshaling into `interface{}` gives you generic types (`map[string]interface{}`, `[]interface{}`, `float64`, `string`, `bool`, `nil`) rather than your custom types. JSON numbers always become `float64`.

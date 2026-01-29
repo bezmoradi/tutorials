@@ -25,7 +25,7 @@ func main() {
 }
 ```
 
-Unlike some other programming languages, Go does not require you to place any parentheses around the `if` condition but if you do so, it's still valid code. As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block (by the same token, the variable `somethingElse` is only accessible within the `else if` block).  
+Unlike some other programming languages, Go does not require you to place any parentheses around the `if` condition but if you do so, it's still valid code. As shown above, inside the `if` block we have defined a variable called `something`; this variable is only accessible within the `if` block (by the same token, the variable `somethingElse` is only accessible within the `else if` block).
 
 In Go, we have the option to place some statements in front of `if`. As an example, let's first see the normal version of writing conditional flow:
 
@@ -36,10 +36,6 @@ import (
 	"fmt"
 )
 
-func isEven(number int) bool {
-	return number%2 == 0
-}
-
 func main() {
 	isEven := isEven(2)
 	if !isEven {
@@ -47,6 +43,10 @@ func main() {
 	} else {
 		fmt.Println("It's even")
 	}
+}
+
+func isEven(number int) bool {
+	return number%2 == 0
 }
 ```
 
@@ -173,7 +173,7 @@ As our struct includes a key called `favoriteNumbers` which is a slice of intege
 
 ## `for` Loop
 
-Unlike other programming languages, there is only `for` construct for looping through an iterable in Go. As shown later, we can use the `for` loop in order to iterate over arrays, slices, and maps.
+Unlike other programming languages, there is only `for` construct for looping through an iterable in Go. As shown later, we can use the `for` loop in order to iterate over arrays, slices, and maps:
 
 ```go
 package main
@@ -182,7 +182,7 @@ import "fmt"
 
 func main() {
 	for i := 0; i < 7; i++ {
-		fmt.Print(i) // 0123456
+		fmt.Print(i)
 	}
 }
 ```
@@ -201,7 +201,7 @@ func main() {
 
 ```
 
-In the above case, `for count < 7` means "As long as `count` is less than 7". We can get the same result using an infinite loop like so:
+In the above case, `for count < 7` means "as long as `count` is less than 7". We can get the same result using an infinite loop like so:
 
 ```go
 func main() {
@@ -236,7 +236,7 @@ func main() {
 }
 ```
 
-In the above snippet a simple program is defined using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10. We can also use `return` instead of `break`; the problem, though, is that `fmt.Println("The end")` won't be run anymore that way. To fix that we have:
+In the above snippet a simple program is defined using an infinite loop that repeatedly reads an integer input from the user, prints the input value, and breaks out of the loop if the input is equal to 10. We can also use `return` instead of `break`; the problem though is that `fmt.Println("The end")` won't be run anymore that way. To fix that we have:
 
 ```go
 func main() {
@@ -270,8 +270,7 @@ func main() {
 }
 ```
 
-In the above program, only odd numbers are printed.  
-We can use the `for` loop in order to iterate over arrays and slices:
+In the above program, only odd numbers are printed. We can also use the `for` loop in order to iterate over arrays and slices:
 
 ```go
 package main
@@ -299,7 +298,7 @@ func main() {
 }
 ```
 
-If you do not care about individual indexes or values, you can replace them by an underscore as in `for _, value := range slice {}`. Likewise, we can loop through maps as follows:
+If you do not care about individual indexes or values, you can replace them by an underscore. Likewise, we can loop through maps as follows:
 
 ```go
 func main() {
@@ -428,6 +427,13 @@ func main() {
 		fmt.Println("N/A")
 	}
 }
+```
+
+It outputs:
+
+```text
+one
+two
 ```
 
 The `fallthrough` keyword lets us run the code for the next `case` even if the condition for that one is not met!

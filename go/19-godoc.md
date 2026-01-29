@@ -1,6 +1,6 @@
 # Go > Godoc
 
-Godoc parses Go source code - including comments - and produces documentation as HTML or plain text. The end result is documentation tightly coupled with the code it documents (To read more, visit [Godoc: documenting Go code](https://go.dev/blog/godoc)). To install Godoc, run the following command in the terminal:
+Godoc parses Go source code - including comments - and produces documentation as HTML or plain text. The end result is documentation tightly coupled with the code it documents (to read more, visit [Godoc: documenting Go code](https://go.dev/blog/godoc)). To install Godoc, run the following command in the terminal:
 
 ```text
 $ go install golang.org/x/tools/cmd/godoc@latest
@@ -11,7 +11,7 @@ To see that in action, let's first create a simple project. The important thing 
 ```text
 module github.com/bezmoradi/go-tuts
 
-go 1.22.0
+go 1.24
 ```
 
 As the next step, let's create a folder called `helpers` then inside it create a file called `helpers.go`:
@@ -54,7 +54,7 @@ Basically, `:1234` refers to any open port on localhost. For example, if `1234` 
 
 ## Examples
 
-Alongside test suites, we can also add examples to `_test.go` files. The good thing about examples is that they are added to the project documentation to show other devs how a piece of code is used plus they are executed like normal tests so you can be confident they reflect what the code actually does (Unlike examples that can be found outside the codebase such as a readme file which often become out of date and incorrect compared to the actual code because they don't get checked).  
+Alongside test suites, we can also add examples to `_test.go` files. The good thing about examples is that they are added to the project documentation to show other devs how a piece of code is used plus they are executed like normal tests so you can be confident they reflect what the code actually does (unlike examples that can be found outside the codebase such as a readme file which often become out of date and incorrect compared to the actual code because they don't get checked).  
 Unlike normal test functions, though, example functions take no arguments and begin with the word `Example` instead of `Test`. To do that, we need to create a new file called `helpers_test.go` including the following logic:
 
 ```go
@@ -70,7 +70,7 @@ func ExampleAdd() {
 ```
 
 By going to `http://localhost:1234` and refreshing the page, we'll see that the above example is added beneath the `Add` function definition. The good news about examples is that they are run as tests meaning if the logic is updated but the example is not, our test suite fails and this feature guarantees that our examples are always up-to-date.  
-In the above example, `// Output: 3` is an important piece because if we omit it, this example function won't be run a part of our test suite. Examples without output comments are useful for demonstrating code that cannot run as unit tests, such as that which accesses the network, while guaranteeing the example at least compiles.  
+In the above example, `// Output: 3` is an important piece because if we omit it, this example function won't be run as part of our test suite. Examples without output comments are useful for demonstrating code that cannot run as unit tests, such as that which accesses the network, while guaranteeing the example at least compiles.  
 Multiple examples can be provided for a given identifier by using a suffix beginning with an underscore followed by a lowercase letter. Each of these examples documents the `Add` function:
 
 ```go

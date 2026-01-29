@@ -84,7 +84,7 @@ func main() {
 }
 ```
 
-As shown above, we've given names to the return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. Meanwhile, if your want to be more explicit, you can return the values this way as well:
+As shown above, we've given names to the return values then inside the function body assign whatever value we want to them then call the `return` statement without anything in front of. Meanwhile, if you want to be more explicit, you can return the values this way as well:
 
 ```go
 func doSomething(input1, input2 string) (returned1 string, returned2 string) {
@@ -317,7 +317,7 @@ func transformNumbers(numbers []int, transformer transformerType) []int {
 }
 ```
 
-As long as the function that we pass as the second argument to the `transformNumbers()` function accepts an input of type integer and returns an integer, we are good to go (Both `double()` and `triple()` functions meed this criteria).
+As long as the function that we pass as the second argument to the `transformNumbers()` function accepts an input of type integer and returns an integer, we are good to go (both `double()` and `triple()` functions meet this criteria).
 
 ### Closures
 
@@ -474,7 +474,7 @@ func sumUp(numbers ...int) int {
 }
 ```
 
-Such a function is called Variadic. Keep in mind that these functions can be called with zero arguments like `sumUp()`. As another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the few first values them accumulate the rest of then into the `numbers ...int`
+Such a function is called Variadic. Keep in mind that these functions can be called with zero arguments like `sumUp()`. As another example of such functions, we have the built-in `fmt.Println()` function which can be called with zero or more arguments. If need be, we can extract the first few values then accumulate the rest of them into the `numbers ...int`
 
 ```go
 func sumUp(first int, numbers ...int) int {
@@ -488,7 +488,7 @@ func sumUp(first int, numbers ...int) int {
 }
 ```
 
-In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored inside the `numbers` slice. Now let's consider a scenario where we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we hove to do the opposite of the `...int` operation:
+In this case, 1 will be assigned to `first` which in the above example we have not used it then the rest of the values (2 and 3) will be stored inside the `numbers` slice. Now let's consider a scenario where we need to use the third-party function which accepts elements of a slice as stand-alone items but our data structure is a slice. In this case, we have to do the opposite of the `...int` operation:
 
 ```go
 func main() {
@@ -521,7 +521,7 @@ func main() {
 }
 ```
 
-Basically, the second param of the `greet` function is set, it will be used otherwise the default value of `Hi` will be used.
+Basically, if the second param of the `greet` function is set, it will be used; otherwise the default value of `Hi` will be used.
 
 ## An Intro to The `defer` Keyword
 

@@ -31,7 +31,7 @@ func TestConcatTwoStrings(t *testing.T) {
 }
 ```
 
-We can call the test function whatever we want but the VSCode extension asks us to start the name with `Test`. By convention, we can add the name of the function being tested like `TestConcatTwoStrings` (Another valid name for our test function would be `Test_concat_two_strings`)
+We can call the test function whatever we want but the VSCode extension asks us to start the name with `Test`. By convention, we can add the name of the function being tested like `TestConcatTwoStrings` (another valid name for our test function would be `Test_concat_two_strings`).
 
 ## Defining Test Cases
 
@@ -121,7 +121,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestSubtract(t *testing.T) {
-	result := add(3, 1)
+	result := subtract(3, 1)
 	if result != 2 {
 		t.Errorf("The result must be 2 but got %v", result)
 	}
@@ -420,11 +420,6 @@ func TestPrompt(t *testing.T) {
 
 The `Pipe` function creates a communication mechanism that allows one process to send data to another process. In the above example, it's used for capturing the output of a function, as you're doing in your test. It returns two `*os.File` values, one for the read end (`r`) and one for the write end (`w`) of the pipe.
 
-## Links
-
--   https://quii.gitbook.io/learn-go-with-tests
--   https://antonz.org/go-concurrency/
-
 ## Mock Library
 
 First of all, run the following command inside the project folder to install the mocking library:
@@ -481,7 +476,7 @@ Let's break down the `NewHttpClient()` function line by line:
     -   This function returns a **pointer** to `HttpClient` (the `*` before `HttpClient`)
     -   Why pointer? Because `HttpClient` is going to hold state (the `http.Client`), and we want to share that same instance, not copy it around
     -   To satisfy the return type, we need to return `&HttpClient{...}`. The `&` creates a pointer to the new `HttpClient` struct we're building which matches our return type `*HttpClient`
-    -   `client: &http.Client{}`creates a new `http.Client{}` and takes its address with `&` and it stores that pointer in the `client` field (Remember that the field is defined as `client *http.Client`, so it expects a pointer)
+    -   `client: &http.Client{}`creates a new `http.Client{}` and takes its address with `&` and it stores that pointer in the `client` field (remember that the field is defined as `client *http.Client`, so it expects a pointer)
 
 The above file is used inside `main.go` like this:
 
@@ -594,7 +589,7 @@ func (m *MockHttpClient) Get(url string) string {
 }
 ```
 
-And you need to say top as follows:
+And you need to set it up as follows:
 
 ```go
 mockClient.On("Get", url).Return("response")
@@ -610,7 +605,7 @@ func (m *MockHttpClient) Get(url string) (string, int, error) {
 }
 ```
 
-And you need to say top as follows:
+And you need to set it up as follows:
 
 ```go
 mockClient.On("Get", url).Return("response", 200, nil)
